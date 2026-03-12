@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ParkAdmin · Statistiques</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.bar-v-chart{display:flex;align-items:flex-end;gap:.5rem;height:140px;padding-top:.5rem}
+.bvc-col{display:flex;flex-direction:column;align-items:center;gap:.3rem;flex:1}
+.bvc-bar{width:100%;transition:height 1.2s cubic-bezier(.34,1.56,.64,1);min-height:3px;position:relative}
+.bvc-bar:hover::after{
+  content:attr(data-tip);position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);
+  background:var(--card2);border:1px solid var(--border);font-size:9px;padding:2px 6px;white-space:nowrap;color:var(--text);
+}
+.bvc-lbl{font-size:9px;color:var(--muted)}
+
+.bar-h-chart{display:flex;flex-direction:column;gap:.6rem}
+.bhc-row{display:flex;align-items:center;gap:.7rem;font-size:11px}
+.bhc-lbl{width:90px;text-align:right;color:var(--muted);flex-shrink:0;font-size:10px}
+.bhc-track{flex:1;height:22px;background:rgba(255,255,255,.03);border:1px solid var(--border2)}
+.bhc-fill{height:100%;display:flex;align-items:center;padding-left:6px;font-size:9px;color:white;font-weight:600;transition:width 1.2s ease}
+.bhc-val{width:80px;text-align:right;font-size:11px;font-weight:600;flex-shrink:0}
+
+/* Donut */
+.donut-wrap{display:flex;align-items:center;gap:2rem;padding:0.5rem 0}
+.donut-leg{display:flex;flex-direction:column;gap:.7rem}
+.donut-leg-item{display:flex;align-items:center;gap:.6rem;font-size:12px}
+.donut-leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+
+.period-row{display:flex;gap:.3rem}
+.p-btn{padding:.3rem .8rem;font-family:var(--font);font-size:10px;font-weight:600;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all .18s}
+.p-btn.active{background:rgba(37,99,235,.15);border-color:var(--blue2);color:var(--blue2)}
+</style>
+</head>
+<body>
+<div class="layout">
+<div class="main">
+  <div class="page-hdr">
+    <div class="page-hdr-left"><h2>📊 Statistiques</h2><p>Analyse des performances du parking</p></div>
+    <div style="display:flex;gap:.6rem;align-items:center">
+      <div class="period-row">
+        <button class="p-btn" onclick="setPeriod(this,'7j')">7J</button>
+        <button class="p-btn active" onclick="setPeriod(this,'30j')">30J</button>
+        <button class="p-btn" onclick="setPeriod(this,'12m')">12M</button>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="toast('Rapport exporté !','success')">📥 Exporter</button>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card c-green"><div class="stat-ico">💰</div><div class="stat-val">48,750</div><div class="stat-lbl">Revenus DZD</div><div class="stat-trend up">↑ +8.3%</div></div>
+    <div class="stat-card c-blue"><div class="stat-ico">🚗</div><div class="stat-val">4,231</div><div class="stat-lbl">Visites</div><div class="stat-trend up">↑ +12%</div></div>
+    <div class="stat-card c-yellow"><div class="stat-ico">📈</div><div class="stat-val">73.8%</div><div class="stat-lbl">Taux d'occupation</div><div class="stat-trend up">↑ +5%</div></div>
+    <div class="stat-card c-purple"><div class="stat-ico">⏱️</div><div class="stat-val">2h24</div><div class="stat-lbl">Durée moy. stationnement</div></div>
+  </div>
+
+  <div class="g2">
+    <div class="panel g-full">
+      <div class="panel-hdr"><span class="panel-title">💰 Revenus mensuels (DZD × 1000)</span></div>
+      <div style="padding:1.5rem">
+        <div class="bar-v-chart" id="revChart"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-hdr"><span class="panel-title">🗺️ Occupation par zone</span></div>
+      <div style="padding:1.5rem">
+        <div class="bar-h-chart" id="zoneChart"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-hdr"><span class="panel-title">👥 Répartition abonnements</span></div>
+      <div style="padding:1.5rem">
+        <div class="donut-wrap">
+          <div style="position:relative;width:130px;height:130px;flex-shrink:0">
+            <svg width="130" height="130" viewBox="0 0 130 130" style="transform:rotate(-90deg)">
+              <circle cx="65" cy="65" r="50" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="24"/>
+              <circle cx="65" cy="65" r="50" fill="none" stroke="#2563eb" stroke-width="24" stroke-dasharray="172.8 314.2"/>
+              <circle cx="65" cy="65" r="50" fill="none" stroke="#8b5cf6" stroke-width="24" stroke-dasharray="94.2 314.2" stroke-dashoffset="-172.8"/>
+              <circle cx="65" cy="65" r="50" fill="none" stroke="#f59e0b" stroke-width="24" stroke-dasharray="47.1 314.2" stroke-dashoffset="-267"/>
+            </svg>
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+              <div style="font-size:1.3rem;font-weight:800;line-height:1">1,342</div>
+              <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">clients</div>
+            </div>
+          </div>
+          <div class="donut-leg">
+            <div class="donut-leg-item"><div class="donut-leg-dot" style="background:#2563eb"></div>Standard — <strong>55%</strong></div>
+            <div class="donut-leg-item"><div class="donut-leg-dot" style="background:#8b5cf6"></div>Premium — <strong>30%</strong></div>
+            <div class="donut-leg-item"><div class="donut-leg-dot" style="background:#f59e0b"></div>VIP — <strong>15%</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-hdr"><span class="panel-title">⏰ Heures de pointe</span></div>
+      <div style="padding:1.5rem">
+        <div class="bar-v-chart" id="hourChart"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-hdr"><span class="panel-title">📋 Résumé par zone — Ce mois</span></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Zone</th><th>Visites</th><th>Revenus (DZD)</th><th>Occupation</th><th>Durée moy.</th><th>Tendance</th></tr></thead>
+        <tbody id="tStatBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
+
+<script src="app.js"></script>
+<script>
+buildLayout('Statistiques','statistiques');
+
+// Revenue chart
+const months=['Sep','Oct','Nov','Déc','Jan','Fév','Mar','Avr','Mai'];
+const revVals=[32,38,35,44,39,48,43,55,51];
+const mx=Math.max(...revVals);
+document.getElementById('revChart').innerHTML=months.map((m,i)=>{
+  const h=Math.round(revVals[i]/mx*130);
+  const isNow=i===5;
+  return `<div class="bvc-col">
+    <div class="bvc-bar" data-tip="${revVals[i]}k DZD" style="height:${h}px;background:${isNow?'var(--blue2)':'rgba(37,99,235,0.28)'}"></div>
+    <div class="bvc-lbl">${m}</div>
+  </div>`;
+}).join('');
+
+// Zone chart
+[
+  {l:'Zone VIP',v:90,c:'var(--purple)'},
+  {l:'Zone A',v:82,c:'var(--blue2)'},
+  {l:'Zone C',v:75,c:'var(--yellow)'},
+  {l:'Zone B',v:61,c:'var(--green)'},
+  {l:'Zone PMR',v:30,c:'var(--cyan)'},
+].forEach(z=>{
+  document.getElementById('zoneChart').insertAdjacentHTML('beforeend',`
+    <div class="bhc-row">
+      <div class="bhc-lbl">${z.l}</div>
+      <div class="bhc-track"><div class="bhc-fill" style="width:${z.v}%;background:${z.c}">${z.v}%</div></div>
+      <div class="bhc-val" style="color:${z.c}">${z.v}%</div>
+    </div>`);
+});
+
+// Hour chart
+const hours=['06h','08h','10h','12h','14h','16h','18h','20h','22h'];
+const hVals=[45,120,180,95,110,200,240,130,60];
+const mxH=Math.max(...hVals);
+document.getElementById('hourChart').innerHTML=hours.map((h,i)=>{
+  const ht=Math.round(hVals[i]/mxH*130);
+  const isPeak=hVals[i]===mxH;
+  return `<div class="bvc-col">
+    <div class="bvc-bar" data-tip="${hVals[i]} visites" style="height:${ht}px;background:${isPeak?'var(--yellow)':'rgba(6,182,212,0.3)'}"></div>
+    <div class="bvc-lbl">${h}</div>
+  </div>`;
+}).join('');
+
+// Summary table
+[
+  {z:'Zone A',v:1420,r:'18,200',o:'82%',d:'2h 15min',t:'↑ +5%',tc:'var(--green)'},
+  {z:'Zone B',v:980,r:'11,760',o:'61%',d:'1h 50min',t:'↓ -2%',tc:'var(--red)'},
+  {z:'Zone C',v:1150,r:'13,800',o:'75%',d:'2h 30min',t:'↑ +8%',tc:'var(--green)'},
+  {z:'Zone VIP',v:420,r:'12,600',o:'90%',d:'3h 10min',t:'↑ +12%',tc:'var(--green)'},
+  {z:'Zone PMR',v:261,r:'2,390',o:'30%',d:'1h 20min',t:'= stable',tc:'var(--muted)'},
+].forEach(s=>{
+  document.getElementById('tStatBody').insertAdjacentHTML('beforeend',`<tr>
+    <td><span class="badge b-blue">${s.z}</span></td>
+    <td>${s.v}</td><td style="color:var(--green);font-weight:600">${s.r} DZD</td>
+    <td>${s.o}</td><td>${s.d}</td>
+    <td style="color:${s.tc};font-weight:600">${s.t}</td>
+  </tr>`);
+});
+
+function setPeriod(btn,p){
+  document.querySelectorAll('.p-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');toast('Période : '+p,'info');
+}
+</script>
+</body>
+</html>

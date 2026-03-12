@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ParkAdmin · Gestion Parkings</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.zone-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:1rem;margin-bottom:2rem}
+.zone-card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:1.4rem;position:relative;overflow:hidden;
+  transition:all .2s;cursor:pointer;box-shadow:var(--shadow);
+}
+.zone-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);border-color:rgba(99,102,241,0.3)}
+.zc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.8rem}
+.zc-name{font-size:1rem;font-weight:700;color:var(--text)}
+.zc-type{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
+.zc-bar{height:6px;background:var(--surface);border-radius:3px;margin-bottom:0.5rem;overflow:hidden}
+.zc-bar-fill{height:100%;border-radius:3px;transition:width 1s ease}
+.zc-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--text2)}
+.zc-del{background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 6px;border-radius:6px;transition:all 0.15s}
+.zc-del:hover{background:rgba(239,68,68,0.1);color:var(--red)}
+.empty-state{text-align:center;padding:3rem;color:var(--muted);font-size:13px;grid-column:1/-1}
+.empty-state .ei{font-size:3rem;margin-bottom:1rem}
+</style>
+</head>
+<body>
+<div class="layout">
+<div class="main">
+
+  <div class="page-hdr">
+    <div class="page-hdr-left">
+      <h2>🅿️ Gestion Parkings</h2>
+      <p>Ajoutez et gérez les zones de parking</p>
+    </div>
+    <button class="btn btn-primary" onclick="openModal('mAddZone')">+ Ajouter une zone</button>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card c-blue"><div class="stat-ico">🔢</div><div class="stat-val" id="totalPlaces">—</div><div class="stat-lbl">Places totales</div></div>
+    <div class="stat-card c-green"><div class="stat-ico">✅</div><div class="stat-val" id="freePlaces">—</div><div class="stat-lbl">Libres</div></div>
+    <div class="stat-card c-red"><div class="stat-ico">🚗</div><div class="stat-val" id="occPlaces">—</div><div class="stat-lbl">Occupées</div></div>
+    <div class="stat-card c-purple"><div class="stat-ico">🗺️</div><div class="stat-val" id="zonesCount">—</div><div class="stat-lbl">Zones actives</div></div>
+  </div>
+
+  <div class="zone-cards" id="zoneCards">
+    <div class="empty-state"><div class="ei">⏳</div><div>Chargement...</div></div>
+  </div>
+
+  <!-- Reservations from Firebase -->
+  <div class="panel">
+    <div class="panel-hdr">
+      <span class="panel-title">📋 Réservations</span>
+      <div class="panel-controls">
+        <input id="srchPark" class="inp" placeholder="Rechercher..." style="width:180px" oninput="filterTable('srchPark','tPark')">
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table id="tPark">
+        <thead><tr><th>Client</th><th>Zone</th><th>Véhicule</th><th>Date</th><th>Tarif</th><th>Statut</th></tr></thead>
+        <tbody id="tParkBody"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">Chargement...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Modal Ajouter Zone -->
+<div class="modal-ov" id="mAddZone">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-hdr-title">➕ Ajouter une zone de parking</span>
+      <button class="modal-close" onclick="closeModal('mAddZone')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="f-group" style="margin-bottom:1rem">
+        <label class="f-label">Nom du parking</label>
+        <input class="inp f-input" id="zNom" placeholder="Ex: Parking Centre-Ville" style="width:100%">
+      </div>
+
+      <div style="background:var(--surface);border-radius:10px;padding:1rem;margin-bottom:1rem">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:0.8rem">Places par type</div>
+        <div class="f-row">
+          <div class="f-group">
+            <label class="f-label">🚗 Standard <span style="color:var(--muted)">(2.5 DT/h)</span></label>
+            <input class="inp f-input" id="zStandard" type="number" placeholder="0" min="0">
+          </div>
+          <div class="f-group">
+            <label class="f-label">⭐ VIP <span style="color:var(--muted)">(4 DT/h)</span></label>
+            <input class="inp f-input" id="zVip" type="number" placeholder="0" min="0">
+          </div>
+        </div>
+        <div class="f-row">
+          <div class="f-group">
+            <label class="f-label">♿ Handicapé <span style="color:var(--muted)">(1 DT/h)</span></label>
+            <input class="inp f-input" id="zHandicap" type="number" placeholder="0" min="0">
+          </div>
+          <div class="f-group">
+            <label class="f-label">🏍 Moto <span style="color:var(--muted)">(1.5 DT/h)</span></label>
+            <input class="inp f-input" id="zMoto" type="number" placeholder="0" min="0">
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);text-align:right">Total: <strong id="zTotalPreview" style="color:var(--blue2)">0</strong> places</div>
+      </div>
+
+      <div class="f-row">
+        <div class="f-group">
+          <label class="f-label">Latitude (optionnel)</label>
+          <input class="inp f-input" id="zLat" type="number" placeholder="34.7406" step="0.0001">
+        </div>
+        <div class="f-group">
+          <label class="f-label">Longitude (optionnel)</label>
+          <input class="inp f-input" id="zLng" type="number" placeholder="10.7603" step="0.0001">
+        </div>
+      </div>
+      <div id="zError" style="display:none;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:0.7rem 1rem;font-size:12px;color:var(--red);margin-top:0.5rem"></div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-outline" onclick="closeModal('mAddZone')">Annuler</button>
+      <button class="btn btn-primary" id="btnSaveZone" onclick="saveZone()">
+        <span id="btnSaveZoneTxt">Enregistrer</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Supprimer Zone -->
+<div class="modal-ov" id="mDelZone">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-hdr">
+      <span class="modal-hdr-title">⚠️ Supprimer la zone</span>
+      <button class="modal-close" onclick="closeModal('mDelZone')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text2)">Voulez-vous vraiment supprimer <strong id="delZoneName"></strong> ? Cette action est irréversible.</p>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-outline" onclick="closeModal('mDelZone')">Annuler</button>
+      <button class="btn btn-danger" onclick="confirmDeleteZone()">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCi-UTQReIk0l5gA9ayDNgUrEIXWteDPXQ",
+  authDomain: "pfes-5bb45.firebaseapp.com",
+  projectId: "pfes-5bb45",
+  storageBucket: "pfes-5bb45.appspot.com",
+  messagingSenderId: "857843523698",
+  appId: "1:857843523698:web:a8cd7566edb367eee6e2eb"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const zoneColors = ['var(--blue2)','var(--green)','var(--yellow)','var(--purple)','var(--cyan)','var(--red)'];
+let zoneList = [];
+let deleteZoneId = null;
+
+// ── Load zones ──
+async function loadZones() {
+  try {
+    const snap = await getDocs(collection(db, 'zones'));
+    zoneList = [];
+    let total = 0, occ = 0;
+
+    snap.forEach(d => {
+      const z = d.data();
+      zoneList.push({id: d.id, ...z});
+      total += (z.totalSpots || 0);
+      occ += (z.occupiedSpots || 0);
+    });
+
+    document.getElementById('totalPlaces').textContent = total;
+    document.getElementById('freePlaces').textContent = total - occ;
+    document.getElementById('occPlaces').textContent = occ;
+    document.getElementById('zonesCount').textContent = zoneList.length;
+
+    renderZoneCards();
+  } catch(e) {
+    console.error(e);
+    toast('Erreur chargement zones', 'danger');
+  }
+}
+
+function renderZoneCards() {
+  const grid = document.getElementById('zoneCards');
+  if(zoneList.length === 0) {
+    grid.innerHTML = `<div class="empty-state">
+      <div class="ei">🅿️</div>
+      <div>Aucune zone enregistrée</div>
+      <div style="margin-top:0.5rem;font-size:11px">Cliquez sur "+ Ajouter une zone" pour commencer</div>
+    </div>`;
+    return;
+  }
+  grid.innerHTML = zoneList.map((z,i) => {
+    const total = z.totalSpots || 0;
+    const occ = z.occupiedSpots || 0;
+    const pct = total > 0 ? Math.round(occ/total*100) : 0;
+    const color = zoneColors[i % zoneColors.length];
+    const sp = z.spots || {};
+    const spotsHTML = Object.entries({
+      '🚗 Standard': sp.standard,
+      '⭐ VIP':      sp.vip,
+      '♿ Handicapé': sp.handicap,
+      '🏍 Moto':    sp.moto,
+    }).filter(([,v]) => v && v.total > 0).map(([label, v]) =>
+      `<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text2)">
+        <span>${label}</span>
+        <span style="font-weight:600">${v.total - (v.occupied||0)} / ${v.total}</span>
+      </div>`
+    ).join('');
+    return `<div class="zone-card" style="border-top:3px solid ${color}">
+      <div class="zc-top">
+        <div>
+          <div class="zc-name">${z.name || z.nom || '—'}</div>
+          <div class="zc-type">${total} places au total</div>
+        </div>
+        <button class="zc-del" onclick="window._delZone('${z.id}','${z.name||z.nom||''}')">🗑</button>
+      </div>
+      ${spotsHTML ? `<div style="margin-bottom:0.8rem;display:flex;flex-direction:column;gap:3px">${spotsHTML}</div>` : ''}
+      <div class="zc-bar"><div class="zc-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+      <div class="zc-meta">
+        <span>${occ}/${total} occupées</span>
+        <span style="color:${color};font-weight:700">${pct}%</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Load reservations ──
+async function loadReservations() {
+  try {
+    const snap = await getDocs(collection(db, 'reservations'));
+    const rows = [];
+    snap.forEach(d => rows.push({id: d.id, ...d.data()}));
+    rows.sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+
+    const stMap = {
+      active: 'b-green', confirmed: 'b-green',
+      pending: 'b-yellow', reserved: 'b-yellow',
+      completed: 'b-blue', expired: 'b-red', cancelled: 'b-red'
+    };
+
+    document.getElementById('tParkBody').innerHTML = rows.length === 0
+      ? `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">Aucune réservation</td></tr>`
+      : rows.map(r => {
+          const date = r.createdAt ? new Date(r.createdAt.seconds*1000).toLocaleDateString('fr-FR') : '—';
+          const st = r.status || 'active';
+          const stClass = stMap[st] || 'b-blue';
+          return `<tr>
+            <td>${r.userName || r.userId?.substring(0,8) || '—'}</td>
+            <td><span class="badge b-blue">${r.zoneName || r.zoneId || '—'}</span></td>
+            <td><code style="color:var(--blue2)">${r.vehiclePlate || '—'}</code></td>
+            <td>${date}</td>
+            <td style="color:var(--green);font-weight:600">${r.totalPrice || r.price || 0} DT</td>
+            <td><span class="badge ${stClass}">${st}</span></td>
+          </tr>`;
+        }).join('');
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+// ── Save zone ──
+window.saveZone = async function() {
+  const nom      = document.getElementById('zNom').value.trim();
+  const standard = parseInt(document.getElementById('zStandard').value) || 0;
+  const vip      = parseInt(document.getElementById('zVip').value) || 0;
+  const handicap = parseInt(document.getElementById('zHandicap').value) || 0;
+  const moto     = parseInt(document.getElementById('zMoto').value) || 0;
+  const lat      = parseFloat(document.getElementById('zLat').value) || null;
+  const lng      = parseFloat(document.getElementById('zLng').value) || null;
+  const errEl    = document.getElementById('zError');
+  const total    = standard + vip + handicap + moto;
+
+  errEl.style.display = 'none';
+
+  if(!nom) { errEl.style.display='block'; errEl.textContent='⚠️ Le nom est obligatoire.'; return; }
+  if(total < 1) { errEl.style.display='block'; errEl.textContent='⚠️ Ajoutez au moins 1 place.'; return; }
+
+  const btn = document.getElementById('btnSaveZone');
+  const txt = document.getElementById('btnSaveZoneTxt');
+  btn.disabled = true; txt.textContent = 'Enregistrement...';
+
+  try {
+    const zoneData = {
+      name: nom,
+      nom: nom,
+      totalSpots: total,
+      occupiedSpots: 0,
+      availableSpots: total,
+      isOpen: true,
+      status: 'active',
+      spots: {
+        standard: { total: standard, occupied: 0, pricePerHour: 2.5 },
+        vip:      { total: vip,      occupied: 0, pricePerHour: 4.0 },
+        handicap: { total: handicap, occupied: 0, pricePerHour: 1.0 },
+        moto:     { total: moto,     occupied: 0, pricePerHour: 1.5 },
+      },
+      createdAt: serverTimestamp(),
+    };
+    if(lat) zoneData.latitude = lat;
+    if(lng) zoneData.longitude = lng;
+
+    await addDoc(collection(db, 'zones'), zoneData);
+
+    closeModal('mAddZone');
+    toast('✅ Parking ajouté avec succès !', 'success');
+
+    ['zNom','zStandard','zVip','zHandicap','zMoto','zLat','zLng'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('zTotalPreview').textContent = '0';
+
+    loadZones();
+  } catch(e) {
+    errEl.style.display = 'block';
+    errEl.textContent = '⚠️ Erreur: ' + e.message;
+  } finally {
+    btn.disabled = false; txt.textContent = 'Enregistrer';
+  }
+};
+
+// ── Delete zone ──
+window._delZone = function(id, name) {
+  deleteZoneId = id;
+  document.getElementById('delZoneName').textContent = name;
+  openModal('mDelZone');
+};
+
+window.confirmDeleteZone = async function() {
+  if(!deleteZoneId) return;
+  try {
+    await deleteDoc(doc(db, 'zones', deleteZoneId));
+    closeModal('mDelZone');
+    toast('Zone supprimée', 'danger');
+    loadZones();
+  } catch(e) {
+    toast('Erreur: ' + e.message, 'danger');
+  }
+  deleteZoneId = null;
+};
+
+// ── Live total preview ──
+function updateTotal() {
+  const s = parseInt(document.getElementById('zStandard')?.value)||0;
+  const v = parseInt(document.getElementById('zVip')?.value)||0;
+  const h = parseInt(document.getElementById('zHandicap')?.value)||0;
+  const m = parseInt(document.getElementById('zMoto')?.value)||0;
+  const el = document.getElementById('zTotalPreview');
+  if(el) el.textContent = s+v+h+m;
+}
+document.addEventListener('input', e => {
+  if(['zStandard','zVip','zHandicap','zMoto'].includes(e.target.id)) updateTotal();
+});
+
+// ── Init ──
+buildLayout('Gestion Parkings', 'parkings');
+loadZones();
+loadReservations();
+</script>
+</body>
+</html>

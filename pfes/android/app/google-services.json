@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "857843523698",
+    "project_id": "pfes-5bb45",
+    "storage_bucket": "pfes-5bb45.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:857843523698:android:c0b9c6eaa59d0aebe6e2eb",
+        "android_client_info": {
+          "package_name": "com.example.pfes"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAqwrEkQOfE_2J2HLOTyvC92dqXsEX6-mQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

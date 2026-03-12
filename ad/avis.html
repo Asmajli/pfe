@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ParkAdmin · Avis Clients</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.avis-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;margin-bottom:2rem}
+.avis-card{
+  background:var(--card);border:1px solid var(--border);
+  padding:1.4rem;position:relative;transition:all .2s;
+}
+.avis-card:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,.4)}
+.avis-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:0.8rem}
+.avis-user{display:flex;align-items:center;gap:.7rem}
+.avis-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:white;flex-shrink:0}
+.avis-name{font-size:13px;font-weight:600;line-height:1.2}
+.avis-date{font-size:10px;color:var(--muted)}
+.stars{color:var(--yellow);font-size:13px;letter-spacing:1px}
+.avis-text{font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:1rem;font-weight:300}
+.avis-zone{font-size:10px}
+.avis-actions{display:flex;gap:.5rem;padding-top:0.8rem;border-top:1px solid var(--border2)}
+.pending-dot{width:7px;height:7px;background:var(--yellow);border-radius:50%;display:inline-block;margin-right:.4rem;animation:blink2 1.5s infinite}
+@keyframes blink2{0%,100%{opacity:1}50%{opacity:.2}}
+
+/* Rating bars */
+.rating-bars{display:flex;flex-direction:column;gap:.5rem}
+.rb-row{display:flex;align-items:center;gap:.6rem;font-size:11px}
+.rb-stars{color:var(--yellow);width:50px;text-align:right;flex-shrink:0}
+.rb-track{flex:1;height:8px;background:rgba(255,255,255,.04);border:1px solid var(--border2)}
+.rb-fill{height:100%;background:var(--yellow);transition:width 1s ease}
+.rb-count{width:30px;color:var(--muted);font-size:10px;flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="layout">
+<div class="main">
+  <div class="page-hdr">
+    <div class="page-hdr-left"><h2>⭐ Avis Clients</h2><p>Modération et suivi des avis</p></div>
+    <div style="display:flex;gap:.5rem">
+      <button class="btn btn-outline" onclick="toast('Filtre: Non lus','info')">🔔 Non lus (12)</button>
+      <button class="btn btn-primary btn-sm" onclick="toast('Tous approuvés !','success')">✓ Tout approuver</button>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card c-yellow"><div class="stat-ico">⭐</div><div class="stat-val">4.6</div><div class="stat-lbl">Note moyenne</div><div class="stat-trend up">↑ +0.2</div></div>
+    <div class="stat-card c-blue"><div class="stat-ico">💬</div><div class="stat-val">847</div><div class="stat-lbl">Total avis</div><div class="stat-trend up">↑ +34 ce mois</div></div>
+    <div class="stat-card c-yellow"><div class="stat-ico">⏳</div><div class="stat-val">12</div><div class="stat-lbl">En attente</div></div>
+    <div class="stat-card c-red"><div class="stat-ico">🚨</div><div class="stat-val">3</div><div class="stat-lbl">Signalés</div></div>
+  </div>
+
+  <div class="g2 mb2">
+    <div class="panel">
+      <div class="panel-hdr"><span class="panel-title">📊 Distribution des notes</span></div>
+      <div style="padding:1.5rem">
+        <div class="rating-bars" id="ratingBars"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-hdr"><span class="panel-title">📈 Évolution satisfaction</span></div>
+      <div style="padding:1.5rem;display:flex;flex-direction:column;gap:.8rem">
+        ${[['Jan','4.2'],['Fév','4.4'],['Mar','4.3'],['Avr','4.5'],['Mai','4.6'],['Juin','4.6']].map(([m,v])=>`
+        <div style="display:flex;align-items:center;gap:.7rem;font-size:11px">
+          <span style="width:30px;color:var(--muted)">${m}</span>
+          <div style="flex:1;height:8px;background:rgba(255,255,255,.03);border:1px solid var(--border2)">
+            <div style="width:${(parseFloat(v)/5*100)}%;height:100%;background:var(--yellow)"></div>
+          </div>
+          <span style="color:var(--yellow);font-weight:700;width:30px">⭐${v}</span>
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>
+
+  <div class="avis-grid" id="avisGrid"></div>
+
+  <div class="panel">
+    <div class="panel-hdr">
+      <span class="panel-title">📋 Tous les avis</span>
+      <div class="panel-controls">
+        <input id="srchAv" class="inp" placeholder="Rechercher..." style="width:180px" oninput="filterTable('srchAv','tAv')">
+        <select class="inp" style="width:130px">
+          <option>Tous</option><option>5 ⭐</option><option>4 ⭐</option><option>En attente</option><option>Signalés</option>
+        </select>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table id="tAv">
+        <thead><tr><th>Client</th><th>Note</th><th>Commentaire</th><th>Zone</th><th>Date</th><th>Statut</th><th>Actions</th></tr></thead>
+        <tbody id="tAvBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
+
+<script src="app.js"></script>
+<script>
+buildLayout('Avis Clients','avis');
+
+// Rating bars
+const ratings=[{s:'⭐⭐⭐⭐⭐',v:62},{s:'⭐⭐⭐⭐',v:24},{s:'⭐⭐⭐',v:9},{s:'⭐⭐',v:3},{s:'⭐',v:2}];
+document.getElementById('ratingBars').innerHTML=ratings.map(r=>`
+  <div class="rb-row">
+    <div class="rb-stars">${r.s}</div>
+    <div class="rb-track"><div class="rb-fill" style="width:${r.v}%"></div></div>
+    <div class="rb-count">${r.v}%</div>
+  </div>`).join('');
+
+const avCols=['#2563eb','#06b6d4','#10b981','#8b5cf6','#f59e0b','#ef4444'];
+const avis=[
+  {n:'Mohamed Amine Kaci',note:5,txt:'"Excellent service ! Les agents sont très professionnels et le parking est bien sécurisé. Je recommande vivement."',zone:'Zone VIP',date:'23/02/2024',st:'Approuvé'},
+  {n:'Fatima Boudali',note:4,txt:'"Très bien organisé, facile de trouver une place. La seule chose à améliorer : l\'éclairage de la zone B la nuit."',zone:'Zone B',date:'22/02/2024',st:'Approuvé'},
+  {n:'Youcef Benmansour',note:5,txt:'"Rapport qualité-prix excellent. Le système de réservation en ligne est très pratique et rapide."',zone:'Zone A',date:'21/02/2024',st:'En attente'},
+  {n:'Amina Hadj Salah',note:3,txt:'"Service correct mais j\'ai eu un problème avec l\'accès le matin. J\'attends toujours une réponse du support."',zone:'Zone C',date:'20/02/2024',st:'En attente'},
+  {n:'Karim Ouali',note:5,txt:'"Parfait ! Zone bien gardée, propre et facilement accessible. Je suis client depuis 2 ans et je n\'ai jamais eu de problème."',zone:'Zone A',date:'19/02/2024',st:'Approuvé'},
+  {n:'Nour Amrani',note:2,txt:'"Déçu par l\'état de la signalisation dans la zone C. Difficile de trouver sa place sans aide."',zone:'Zone C',date:'18/02/2024',st:'Signalé'},
+];
+
+const stars=n=>'⭐'.repeat(n)+'☆'.repeat(5-n);
+const stMapAv={'Approuvé':'b-green','En attente':'b-yellow','Signalé':'b-red'};
+document.getElementById('avisGrid').innerHTML=avis.slice(0,4).map((a,i)=>`
+  <div class="avis-card">
+    <div class="avis-head">
+      <div class="avis-user">
+        <div class="avis-av" style="background:${avCols[i]}">${a.n.charAt(0)}</div>
+        <div>
+          <div class="avis-name">${a.n}</div>
+          <div class="avis-date">${a.date}</div>
+        </div>
+      </div>
+      <div class="stars">${stars(a.note)}</div>
+    </div>
+    <div class="avis-text">${a.txt}</div>
+    <div class="avis-zone"><span class="badge b-blue">${a.zone}</span> <span class="badge ${stMapAv[a.st]}">${a.st==='En attente'?'<span class=pending-dot></span>':''} ${a.st}</span></div>
+    <div class="avis-actions">
+      <button class="btn btn-outline btn-sm" onclick="toast('Réponse envoyée !','info')">Répondre</button>
+      <button class="btn btn-primary btn-sm" onclick="toast('Avis approuvé !','success')">✓ Approuver</button>
+      <button class="btn btn-danger btn-sm" onclick="toast('Avis supprimé','danger')">✕</button>
+    </div>
+  </div>`).join('');
+
+document.getElementById('tAvBody').innerHTML=avis.map((a,i)=>`<tr>
+  <td><div class="name-cell"><div class="av" style="background:${avCols[i%avCols.length]}">${a.n.charAt(0)}</div>${a.n}</div></td>
+  <td style="color:var(--yellow)">${'★'.repeat(a.note)}</td>
+  <td style="max-width:200px;white-space:normal;font-size:11px;color:var(--muted)">${a.txt.substring(0,60)}...</td>
+  <td><span class="badge b-blue">${a.zone}</span></td>
+  <td>${a.date}</td>
+  <td><span class="badge ${stMapAv[a.st]}">${a.st}</span></td>
+  <td style="display:flex;gap:.3rem">
+    <button class="btn btn-primary btn-sm" onclick="toast('Approuvé !','success')">✓</button>
+    <button class="btn btn-danger btn-sm" onclick="toast('Supprimé','danger')">✕</button>
+  </td>
+</tr>`).join('');
+</script>
+</body>
+</html>

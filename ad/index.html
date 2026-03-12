@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ParkAdmin · Accueil</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.welcome{
+  background:linear-gradient(135deg,rgba(37,99,235,0.15) 0%,rgba(6,182,212,0.08) 100%);
+  border:1px solid rgba(37,99,235,0.2);
+  padding:1.8rem 2rem;margin-bottom:2rem;
+  position:relative;overflow:hidden;
+  animation:fadeUp .6s ease both;
+}
+.welcome::before{
+  content:'🅿';position:absolute;right:1.5rem;top:50%;transform:translateY(-50%);
+  font-size:7rem;opacity:0.04;line-height:1;
+}
+.welcome-title{font-size:1.4rem;font-weight:800;margin-bottom:0.3rem}
+.welcome-sub{font-size:12px;color:var(--muted);font-weight:300}
+.welcome-meta{margin-top:1rem;display:flex;gap:1.5rem;flex-wrap:wrap}
+.welcome-tag{font-size:11px;color:var(--text2);background:rgba(255,255,255,0.06);padding:0.3rem 0.7rem;border:1px solid var(--border)}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+/* Chart bars */
+.bar-chart{display:flex;align-items:flex-end;gap:0.6rem;height:130px;padding-top:0.5rem}
+.bar-col{display:flex;flex-direction:column;align-items:center;gap:0.4rem;flex:1}
+.bar-fill{width:100%;transition:height 1s cubic-bezier(.34,1.56,.64,1);min-height:3px;position:relative}
+.bar-fill:hover::after{content:attr(data-val);position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text2);white-space:nowrap;background:var(--card2);padding:2px 5px;border:1px solid var(--border)}
+.bar-lbl{font-size:9px;color:var(--muted)}
+
+/* Activity */
+.act-list{list-style:none}
+.act-item{display:flex;align-items:flex-start;gap:0.8rem;padding:0.8rem 1.5rem;border-bottom:1px solid var(--border2);font-size:12px}
+.act-item:last-child{border-bottom:none}
+.act-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.act-time{margin-left:auto;font-size:10px;color:var(--muted);white-space:nowrap;padding-left:1rem}
+
+/* Occ bars */
+.occ-bar-track{height:7px;background:rgba(255,255,255,0.05);border:1px solid var(--border2);margin-top:0.35rem}
+.occ-bar-fill{height:100%;transition:width 1.2s ease}
+
+/* Quick actions */
+.quick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0.8rem;margin-top:1.5rem}
+.quick-btn{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.5rem;
+  padding:1.3rem 1rem;
+  background:var(--card);border:1px solid var(--border);
+  color:var(--text2);text-decoration:none;font-size:11px;font-weight:500;
+  text-transform:uppercase;letter-spacing:0.08em;
+  transition:all .18s;cursor:pointer;
+}
+.quick-btn:hover{border-color:var(--blue2);background:rgba(37,99,235,0.08);color:var(--text);transform:translateY(-2px)}
+.quick-btn .qi{font-size:1.7rem}
+</style>
+</head>
+<body>
+<div class="layout">
+<div class="main" id="mainContent">
+
+  <div class="welcome">
+    <div class="welcome-title" id="greet">Bonjour, Administrateur 👋</div>
+    <div class="welcome-sub">Voici l'état de votre système de parking en temps réel.</div>
+    <div class="welcome-meta">
+      <span class="welcome-tag">📅 <span id="dateNow"></span></span>
+      <span class="welcome-tag" style="color:var(--green)">✅ Tous les systèmes opérationnels</span>
+      <span class="welcome-tag">🏢 3 zones actives</span>
+    </div>
+  </div>
+
+ <!-- KPIs -->
+<div class="stats-row">
+
+  <div class="stat-card c-blue">
+    <div class="stat-ico">🅿️</div>
+    <div class="stat-val" id="totalPlaces">0</div>
+    <div class="stat-lbl">Places totales</div>
+    <div class="stat-trend up">↑ Parking</div>
+  </div>
+
+  <div class="stat-card c-green">
+    <div class="stat-ico">🚗</div>
+    <div class="stat-val" id="occupiedPlaces">0</div>
+    <div class="stat-lbl">Occupées maintenant</div>
+    <div class="stat-trend up">↑ Occupation</div>
+  </div>
+
+  <div class="stat-card c-cyan">
+    <div class="stat-ico">👥</div>
+    <div class="stat-val" id="usersCount">0</div>
+    <div class="stat-lbl">Utilisateurs inscrits</div>
+    <div class="stat-trend up">↑ Utilisateurs</div>
+  </div>
+
+  <div class="stat-card c-yellow">
+    <div class="stat-ico">💰</div>
+    <div class="stat-val" id="revenue">0</div>
+    <div class="stat-lbl">Revenus</div>
+    <div class="stat-trend up">↑ Revenus</div>
+  </div>
+
+  <div class="stat-card c-purple">
+    <div class="stat-ico">🛡️</div>
+    <div class="stat-val" id="adminsCount">0</div>
+    <div class="stat-lbl">Responsables actifs</div>
+    <div class="stat-trend neu">= Admins</div>
+  </div>
+
+  <div class="stat-card c-red">
+    <div class="stat-ico">⚠️</div>
+    <div class="stat-val" id="alertsCount">0</div>
+    <div class="stat-lbl">Alertes actives</div>
+    <div class="stat-trend down">↓ Alertes</div>
+  </div>
+
+</div>
+  <!-- Charts & activity -->
+  <div class="g2">
+    <div class="panel">
+      <div class="panel-hdr"><span class="panel-title">💰 Revenus — 8 derniers mois</span></div>
+      <div style="padding:1.5rem">
+        <div class="bar-chart" id="revChart"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-hdr"><span class="panel-title">🗺️ Occupation par zone</span></div>
+      <div style="padding:1.5rem;display:flex;flex-direction:column;gap:1rem" id="occZones"></div>
+    </div>
+  </div>
+
+  <!-- Recent activity -->
+  <div class="panel mb2">
+    <div class="panel-hdr">
+      <span class="panel-title">📋 Activité récente</span>
+      <span style="font-size:11px;color:var(--muted)">Mis à jour en temps réel</span>
+    </div>
+    <ul class="act-list" id="actList"></ul>
+  </div>
+
+  <!-- Quick access -->
+  <!--<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.15em;color:var(--muted);margin-bottom:.6rem">Accès rapides</div>
+  <div class="quick-grid">
+    <a href="parkings.html" class="quick-btn"><span class="qi">🅿️</span>Gestion Parkings</a>
+    <a href="utilisateurs.html" class="quick-btn"><span class="qi">👤</span>Utilisateurs</a>
+    <a href="responsables.html" class="quick-btn"><span class="qi">🛡️</span>Responsables</a>
+    <a href="statistiques.html" class="quick-btn"><span class="qi">📊</span>Statistiques</a>
+    <a href="avis.html" class="quick-btn"><span class="qi">⭐</span>Avis Clients</a>
+    <a href="#" class="quick-btn" onclick="toast('Rapport exporté !','success')"><span class="qi">📄</span>Exporter rapport</a>
+  </div>
+-->
+  <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.15em;color:var(--muted);margin-bottom:.6rem">
+Accès rapides
+</div>
+
+<div class="quick-grid">
+
+  <div class="quick-btn" onclick="goPage('parkings.html')">
+    <span class="qi">🅿️</span>Gestion Parkings
+  </div>
+
+  <div class="quick-btn" onclick="goPage('utilisateurs.html')">
+    <span class="qi">👤</span>Utilisateurs
+  </div>
+
+  <div class="quick-btn" onclick="goPage('responsables.html')">
+    <span class="qi">🛡️</span>Responsables
+  </div>
+
+  <div class="quick-btn" onclick="goPage('statistiques.html')">
+    <span class="qi">📊</span>Statistiques
+  </div>
+
+  <div class="quick-btn" onclick="goPage('avis.html')">
+    <span class="qi">⭐</span>Avis Clients
+  </div>
+
+  <div class="quick-btn" onclick="toast('Rapport exporté !','success')">
+    <span class="qi">📄</span>Exporter rapport
+  </div>
+
+</div>
+
+<script>
+function goPage(page){
+  window.location.href = page;
+}
+</script>
+<!--CODE JAVASCRIPT-->
+
+</div>
+</div>
+<script src="app.js"></script>
+<script>
+buildLayout('Accueil','accueil');
+
+// greeting & date
+const h=new Date().getHours();
+document.getElementById('greet').textContent=(h<12?'Bonjour':h<18?'Bon après-midi':'Bonsoir')+', Administrateur 👋';
+document.getElementById('dateNow').textContent=new Date().toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+// revenue chart
+const months=['Sep','Oct','Nov','Déc','Jan','Fév','Mar','Avr'];
+const vals=[32,38,35,44,39,48,43,55];
+const mx=Math.max(...vals);
+document.getElementById('revChart').innerHTML=months.map((m,i)=>{
+  const h=Math.round(vals[i]/mx*120);
+  const isCur=i===5;
+  return `<div class="bar-col">
+    <div class="bar-fill" data-val="${vals[i]}k" style="height:${h}px;background:${isCur?'var(--blue2)':'rgba(37,99,235,0.3)'}"></div>
+    <div class="bar-lbl">${m}</div>
+  </div>`;
+}).join('');
+
+// occupation zones
+const zones=[
+  {n:'Zone A — Extérieur',v:82,c:'var(--blue2)'},
+  {n:'Zone B — Couvert',v:61,c:'var(--green)'},
+  {n:'Zone C — Souterrain',v:75,c:'var(--yellow)'},
+  {n:'Zone VIP',v:90,c:'var(--purple)'},
+  {n:'Zone PMR',v:30,c:'var(--cyan)'},
+];
+document.getElementById('occZones').innerHTML=zones.map(z=>`
+  <div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:0.2rem">
+      <span style="color:var(--text2)">${z.n}</span><span style="color:${z.c};font-weight:600">${z.v}%</span>
+    </div>
+    <div class="occ-bar-track"><div class="occ-bar-fill" style="width:${z.v}%;background:${z.c}"></div></div>
+  </div>`).join('');
+
+// activity
+const acts=[
+  {dot:'var(--green)',text:'<strong>Mohamed Amine</strong> — Entrée Zone A · Place A-14',time:'il y a 3 min'},
+  {dot:'var(--red)',text:'<strong>Fatima Boudali</strong> — Sortie Zone VIP · Durée 4h12',time:'il y a 11 min'},
+  {dot:'var(--blue2)',text:'<strong>Nouveau compte</strong> — Youcef Benmansour inscrit',time:'il y a 26 min'},
+  {dot:'var(--yellow)',text:'<strong>Alerte</strong> — Zone C : capteur hors ligne',time:'il y a 1h'},
+  {dot:'var(--green)',text:'<strong>Paiement reçu</strong> — 3,200 DZD · Karim Ouali',time:'il y a 2h'},
+  {dot:'var(--purple)',text:'<strong>Responsable</strong> — Nadia Hamidi a pris son poste',time:'il y a 3h'},
+];
+document.getElementById('actList').innerHTML=acts.map(a=>`
+  <li class="act-item">
+    <span class="act-dot" style="background:${a.dot}"></span>
+    <span>${a.text}</span>
+    <span class="act-time">${a.time}</span>
+  </li>`).join('');
+</script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCi-UTQReIk0l5gA9ayDNgUrEIXWteDPXQ",
+    authDomain: "pfes-5bb45.firebaseapp.com",
+    projectId: "pfes-5bb45",
+    storageBucket: "pfes-5bb45.appspot.com",
+    messagingSenderId: "857843523698",
+    appId: "1:857843523698:web:a8cd7566edb367eee6e2eb"
+  };
+
+  // تهيئة Firebase
+  const app = initializeApp(firebaseConfig);
+
+  // Firestore
+  const db = getFirestore(app);
+
+  async function loadStats() {
+
+  // zones
+  const zonesSnap = await getDocs(collection(db, "zones"));
+
+  let total = 0;
+  let occupied = 0;
+
+  zonesSnap.forEach(doc => {
+    const z = doc.data();
+    total += z.totalSpots;
+    occupied += z.occupiedSpots;
+  });
+
+  document.getElementById("totalPlaces").textContent = total;
+  document.getElementById("occupiedPlaces").textContent = occupied;
+
+  // users
+  const usersSnap = await getDocs(collection(db, "users"));
+  document.getElementById("usersCount").textContent = usersSnap.size;
+  
+  
+}
+
+loadStats();
+
+</script>
+</body>
+</html>

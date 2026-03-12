@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ParkAdmin · Gestion Utilisateurs</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="layout">
+<div class="main">
+  <div class="page-hdr">
+    <div class="page-hdr-left"><h2>👤 Gestion Utilisateurs</h2><p>Comptes et abonnements des clients</p></div>
+    <button class="btn btn-primary" onclick="openModal('mAddUser')">+ Nouvel utilisateur</button>
+  </div>
+
+  <div class="stats-row">
+
+  <div class="stat-card c-blue">
+    <div class="stat-ico">👥</div>
+    <div class="stat-val" id="usersTotal">0</div>
+    <div class="stat-lbl">Total</div>
+    <div class="stat-trend up">Utilisateurs</div>
+  </div>
+
+  <div class="stat-card c-green">
+    <div class="stat-ico">✅</div>
+    <div class="stat-val" id="usersActive">0</div>
+    <div class="stat-lbl">Actifs</div>
+  </div>
+
+  <div class="stat-card c-purple">
+    <div class="stat-ico">⭐</div>
+    <div class="stat-val" id="usersPremium">0</div>
+    <div class="stat-lbl">Premium</div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-hdr">
+      <span class="panel-title">Liste des utilisateurs</span>
+      <div class="panel-controls">
+        <input id="srchU" class="inp" placeholder="Rechercher..." style="width:180px" oninput="filterTable('srchU','tU')">
+        <select class="inp" style="width:130px" onchange="filterSt(this.value)">
+          <option value="">Tous les statuts</option>
+          <option>Actif</option><option>Premium</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="openModal('mAddUser')">+ Ajouter</button>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table id="tU">
+        <thead><tr><th>Utilisateur</th><th>Email</th><th>Téléphone</th><th>Véhicule</th><th>Abonnement</th><th>Solde</th><th>Statut</th><th>Actions</th></tr></thead>
+        <tbody id="tUBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="modal-ov" id="mAddUser">
+  <div class="modal">
+    <div class="modal-hdr"><span class="modal-hdr-title">Nouvel utilisateur</span><button class="modal-close" onclick="closeModal('mAddUser')">✕</button></div>
+    <div class="modal-body">
+      <div class="f-row">
+        <div class="f-group"><label class="f-label">Prénom</label><input class="inp f-input" placeholder="Mohamed"></div>
+        <div class="f-group"><label class="f-label">Nom</label><input class="inp f-input" placeholder="Kaci"></div>
+      </div>
+      <div class="f-row">
+        <div class="f-group"><label class="f-label">Email</label><input class="inp f-input" type="email" placeholder="m.kaci@email.com"></div>
+        <div class="f-group"><label class="f-label">Téléphone</label><input class="inp f-input" placeholder="0555 112 233"></div>
+      </div>
+      <div class="f-row">
+        <div class="f-group"><label class="f-label">Plaque</label><input class="inp f-input" placeholder="16-12345-A"></div>
+        <div class="f-group"><label class="f-label">Abonnement</label><select class="inp f-input"><option>Standard</option><option>Premium</option><option>VIP</option></select></div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-outline" onclick="closeModal('mAddUser')">Annuler</button>
+      <button class="btn btn-primary" onclick="closeModal('mAddUser');toast('Utilisateur ajouté !')">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-ov" id="mViewUser">
+  <div class="modal">
+    <div class="modal-hdr"><span class="modal-hdr-title" id="viewUTitle">Détails</span><button class="modal-close" onclick="closeModal('mViewUser')">✕</button></div>
+    <div class="modal-body" id="viewUBody"></div>
+    <div class="modal-ftr">
+      <button class="btn btn-danger btn-sm" onclick="closeModal('mViewUser');toast('Utilisateur suspendu','danger')">Suspendre</button>
+      <button class="btn btn-primary" onclick="closeModal('mViewUser')">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+buildLayout('Gestion Utilisateurs','utilisateurs');
+
+const avCols=['#2563eb','#06b6d4','#10b981','#8b5cf6','#f59e0b','#ef4444','#ec4899','#14b8a6'];
+let users=[
+  {n:'Mohamed Amine Kaci',e:'ma.kaci@email.com',t:'0555 112 233',v:'16-12345-A',ab:'Premium',s:'5,200',st:'Premium'},
+  {n:'Fatima Zohra Boudali',e:'fz.boudali@email.com',t:'0661 445 566',v:'16-98765-B',ab:'VIP',s:'12,000',st:'Actif'},
+  {n:'Youcef Benmansour',e:'y.benmans@email.com',t:'0770 223 344',v:'09-33210-C',ab:'Standard',s:'800',st:'Actif'},
+  {n:'Amina Hadj Salah',e:'a.hadjsalah@email.com',t:'0555 667 788',v:'16-54321-A',ab:'Premium',s:'3,450',st:'Premium'},
+  {n:'Karim Ouali',e:'k.ouali@email.com',t:'0661 998 877',v:'25-11122-B',ab:'Standard',s:'200',st:'Suspendu'},
+  {n:'Nour El Houda Amrani',e:'n.amrani@email.com',t:'0770 334 455',v:'16-77890-A',ab:'Standard',s:'1,100',st:'Actif'},
+  {n:'Rachid Belkacemi',e:'r.belk@email.com',t:'0555 889 900',v:'31-44556-C',ab:'VIP',s:'8,750',st:'Actif'},
+];
+const stMap={Actif:'b-green',Premium:'b-purple',Suspendu:'b-red',VIP:'b-cyan'};
+
+function renderUsers(data){
+  document.getElementById('tUBody').innerHTML=data.map((u,i)=>`<tr>
+    <td><div class="name-cell"><div class="av" style="background:${avCols[i%avCols.length]}">${u.n.charAt(0)}</div>${u.n}</div></td>
+    <td style="color:var(--muted)">${u.e}</td><td>${u.t}</td>
+    <td><code style="color:var(--cyan)">${u.v}</code></td>
+    <td>${u.ab}</td><td style="color:var(--green);font-weight:600">${u.s} DZD</td>
+    <td><span class="badge ${stMap[u.st]||'b-blue'}">${u.st}</span></td>
+    <td style="display:flex;gap:.3rem">
+      <button class="btn btn-outline btn-sm" onclick='viewU(${JSON.stringify(u)})'>Voir</button>
+      <button class="btn btn-danger btn-sm" onclick="toast('Supprimé','danger')">✕</button>
+    </td>
+  </tr>`).join('');
+}
+renderUsers(users);
+
+document.getElementById('srchU').oninput=function(){
+  renderUsers(users.filter(u=>JSON.stringify(u).toLowerCase().includes(this.value.toLowerCase())));
+};
+function filterSt(v){renderUsers(v?users.filter(u=>u.st===v):users)}
+
+function viewU(u){
+  document.getElementById('viewUTitle').textContent=u.n;
+  document.getElementById('viewUBody').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;font-size:13px">
+      ${[['Email',u.e],['Téléphone',u.t],['Véhicule',`<code style="color:var(--cyan)">${u.v}</code>`],['Abonnement',u.ab],['Solde',`<span style="color:var(--green);font-weight:600">${u.s} DZD</span>`],['Statut',`<span class="badge ${stMap[u.st]}">${u.st}</span>`]].map(([l,v])=>`
+      <div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">${l}</div>${v}</div>`).join('')}
+    </div>`;
+  openModal('mViewUser');
+}
+</script>
+</body>
+</html>
