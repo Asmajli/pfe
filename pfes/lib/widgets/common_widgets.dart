@@ -182,23 +182,25 @@ class StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ParkCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Container(padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(color: accent.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
-          child: Icon(icon, color: accent, size: 18)),
-        if (trend != null)
-          Text(trend!, style: TextStyle(fontSize: 11, color: accent, fontWeight: FontWeight.w600)),
+    return ParkCard(
+      padding: const EdgeInsets.all(12),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Container(padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(color: accent.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
+            child: Icon(icon, color: accent, size: 16)),
+          if (trend != null)
+            Text(trend!, style: TextStyle(fontSize: 10, color: accent, fontWeight: FontWeight.w600)),
+        ]),
+        const SizedBox(height: 6),
+        Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800,
+            color: AppColors.textPri, letterSpacing: -0.5)),
+        Text(label, style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+        const SizedBox(height: 6),
+        Container(height: 2, decoration: BoxDecoration(
+          color: accent, borderRadius: BorderRadius.circular(1))),
       ]),
-      const SizedBox(height: 10),
-      Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800,
-          color: AppColors.textPri, letterSpacing: -0.5)),
-      const SizedBox(height: 2),
-      Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
-      const SizedBox(height: 10),
-      Container(height: 2, decoration: BoxDecoration(
-        color: accent, borderRadius: BorderRadius.circular(1))),
-    ]));
+    );
   }
 }
 
@@ -331,7 +333,7 @@ class ZoneCard extends StatelessWidget {
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Text('${(occ * 100).toInt()}% occupé',
               style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
-          Text('${price.toInt()} DZD/h',
+          Text('${price.toInt()} DT/h',
               style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.cyan)),
         ]),
       ]),

@@ -52,12 +52,15 @@ class ParkingZone {
   final double pricePerHour;
   final bool isOpen;
   final String openHours;
+  final double? latitude;   // ← إحداثيات GPS
+  final double? longitude;  // ← إحداثيات GPS
 
   const ParkingZone({
     required this.id, required this.name, required this.type,
     required this.address, required this.totalSpots,
     required this.occupiedSpots, required this.pricePerHour,
     this.isOpen = true, this.openHours = '24h/24',
+    this.latitude, this.longitude,
   });
 
   int get freeSpots => totalSpots - occupiedSpots;
@@ -67,11 +70,17 @@ class ParkingZone {
   factory ParkingZone.fromDoc(DocumentSnapshot doc) {
     final d = doc.data() as Map<String, dynamic>;
     return ParkingZone(
-      id: doc.id, name: d['name'] ?? '', type: d['type'] ?? 'exterieur',
-      address: d['address'] ?? '', totalSpots: d['totalSpots'] ?? 0,
+      id: doc.id,
+      name: d['name'] ?? d['nom'] ?? '',
+      type: d['type'] ?? 'standard',
+      address: d['address'] ?? d['nom'] ?? '',
+      totalSpots: d['totalSpots'] ?? 0,
       occupiedSpots: d['occupiedSpots'] ?? 0,
-      pricePerHour: (d['pricePerHour'] ?? 100).toDouble(),
-      isOpen: d['isOpen'] ?? true, openHours: d['openHours'] ?? '24h/24',
+      pricePerHour: (d['pricePerHour'] ?? d['tarif'] ?? 0).toDouble(),
+      isOpen: d['isOpen'] ?? true,
+      openHours: d['openHours'] ?? '24h/24',
+      latitude: d['latitude'] != null ? (d['latitude'] as num).toDouble() : null,
+      longitude: d['longitude'] != null ? (d['longitude'] as num).toDouble() : null,
     );
   }
 
@@ -79,6 +88,8 @@ class ParkingZone {
     'name': name, 'type': type, 'address': address,
     'totalSpots': totalSpots, 'occupiedSpots': occupiedSpots,
     'pricePerHour': pricePerHour, 'isOpen': isOpen, 'openHours': openHours,
+    if (latitude != null) 'latitude': latitude,
+    if (longitude != null) 'longitude': longitude,
   };
 }
 
@@ -116,7 +127,7 @@ class Reservation {
       spotNumber: d['spotNumber'] ?? '', vehiclePlate: d['vehiclePlate'] ?? '',
       startTime: (d['startTime'] as Timestamp).toDate(),
       endTime: d['endTime'] != null ? (d['endTime'] as Timestamp).toDate() : null,
-      pricePerHour: (d['pricePerHour'] ?? 100).toDouble(),
+      pricePerHour: (d['pricePerHour'] ?? 0).toDouble(),
       totalAmount: d['totalAmount']?.toDouble(), status: st,
       createdAt: d['createdAt'] is Timestamp
           ? (d['createdAt'] as Timestamp).toDate() : DateTime.now(),

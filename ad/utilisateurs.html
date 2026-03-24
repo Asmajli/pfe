@@ -9,133 +9,202 @@
 <div class="layout">
 <div class="main">
   <div class="page-hdr">
-    <div class="page-hdr-left"><h2>👤 Gestion Utilisateurs</h2><p>Comptes et abonnements des clients</p></div>
-    <button class="btn btn-primary" onclick="openModal('mAddUser')">+ Nouvel utilisateur</button>
+    <div class="page-hdr-left"><h2>👤 Gestion Utilisateurs</h2><p>Comptes clients inscrits via l'application</p></div>
   </div>
 
   <div class="stats-row">
-
-  <div class="stat-card c-blue">
-    <div class="stat-ico">👥</div>
-    <div class="stat-val" id="usersTotal">0</div>
-    <div class="stat-lbl">Total</div>
-    <div class="stat-trend up">Utilisateurs</div>
-  </div>
-
-  <div class="stat-card c-green">
-    <div class="stat-ico">✅</div>
-    <div class="stat-val" id="usersActive">0</div>
-    <div class="stat-lbl">Actifs</div>
-  </div>
-
-  <div class="stat-card c-purple">
-    <div class="stat-ico">⭐</div>
-    <div class="stat-val" id="usersPremium">0</div>
-    <div class="stat-lbl">Premium</div>
+    <div class="stat-card c-blue"><div class="stat-ico">👥</div><div class="stat-val" id="usersTotal">—</div><div class="stat-lbl">Total utilisateurs</div></div>
+    <div class="stat-card c-green"><div class="stat-ico">✅</div><div class="stat-val" id="usersActive">—</div><div class="stat-lbl">Actifs</div></div>
+    <div class="stat-card c-purple"><div class="stat-ico">🚗</div><div class="stat-val" id="usersWithVehicle">—</div><div class="stat-lbl">Avec véhicule</div></div>
+    <div class="stat-card c-yellow"><div class="stat-ico">📅</div><div class="stat-val" id="usersThisMonth">—</div><div class="stat-lbl">Ce mois</div></div>
   </div>
 
   <div class="panel">
     <div class="panel-hdr">
       <span class="panel-title">Liste des utilisateurs</span>
       <div class="panel-controls">
-        <input id="srchU" class="inp" placeholder="Rechercher..." style="width:180px" oninput="filterTable('srchU','tU')">
-        <select class="inp" style="width:130px" onchange="filterSt(this.value)">
-          <option value="">Tous les statuts</option>
-          <option>Actif</option><option>Premium</option>
-        </select>
-        <button class="btn btn-primary btn-sm" onclick="openModal('mAddUser')">+ Ajouter</button>
+        <input id="srchU" class="inp" placeholder="Rechercher..." style="width:180px" oninput="searchUsers(this.value)">
       </div>
     </div>
     <div class="tbl-wrap">
       <table id="tU">
-        <thead><tr><th>Utilisateur</th><th>Email</th><th>Téléphone</th><th>Véhicule</th><th>Abonnement</th><th>Solde</th><th>Statut</th><th>Actions</th></tr></thead>
-        <tbody id="tUBody"></tbody>
+        <thead><tr><th>Utilisateur</th><th>Email</th><th>Téléphone</th><th>Véhicule</th><th>Inscription</th><th>Statut</th><th>Actions</th></tr></thead>
+        <tbody id="tUBody"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem">Chargement...</td></tr></tbody>
       </table>
     </div>
   </div>
 </div>
 </div>
 
-<div class="modal-ov" id="mAddUser">
+<!-- Modal voir utilisateur -->
+<div class="modal-ov" id="mViewUser">
   <div class="modal">
-    <div class="modal-hdr"><span class="modal-hdr-title">Nouvel utilisateur</span><button class="modal-close" onclick="closeModal('mAddUser')">✕</button></div>
-    <div class="modal-body">
-      <div class="f-row">
-        <div class="f-group"><label class="f-label">Prénom</label><input class="inp f-input" placeholder="Mohamed"></div>
-        <div class="f-group"><label class="f-label">Nom</label><input class="inp f-input" placeholder="Kaci"></div>
-      </div>
-      <div class="f-row">
-        <div class="f-group"><label class="f-label">Email</label><input class="inp f-input" type="email" placeholder="m.kaci@email.com"></div>
-        <div class="f-group"><label class="f-label">Téléphone</label><input class="inp f-input" placeholder="0555 112 233"></div>
-      </div>
-      <div class="f-row">
-        <div class="f-group"><label class="f-label">Plaque</label><input class="inp f-input" placeholder="16-12345-A"></div>
-        <div class="f-group"><label class="f-label">Abonnement</label><select class="inp f-input"><option>Standard</option><option>Premium</option><option>VIP</option></select></div>
-      </div>
+    <div class="modal-hdr">
+      <span class="modal-hdr-title" id="viewUTitle">Détails utilisateur</span>
+      <button class="modal-close" onclick="closeModal('mViewUser')">✕</button>
     </div>
+    <div class="modal-body" id="viewUBody"></div>
     <div class="modal-ftr">
-      <button class="btn btn-outline" onclick="closeModal('mAddUser')">Annuler</button>
-      <button class="btn btn-primary" onclick="closeModal('mAddUser');toast('Utilisateur ajouté !')">Enregistrer</button>
+      <button class="btn btn-outline" onclick="closeModal('mViewUser')">Fermer</button>
     </div>
   </div>
 </div>
 
-<div class="modal-ov" id="mViewUser">
-  <div class="modal">
-    <div class="modal-hdr"><span class="modal-hdr-title" id="viewUTitle">Détails</span><button class="modal-close" onclick="closeModal('mViewUser')">✕</button></div>
-    <div class="modal-body" id="viewUBody"></div>
+<!-- Modal confirmer suppression -->
+<div class="modal-ov" id="mDelUser">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-hdr">
+      <span class="modal-hdr-title">⚠️ Supprimer l'utilisateur</span>
+      <button class="modal-close" onclick="closeModal('mDelUser')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text2)">Voulez-vous vraiment supprimer <strong id="delUserName"></strong> ? Ses données Firestore seront supprimées.</p>
+    </div>
     <div class="modal-ftr">
-      <button class="btn btn-danger btn-sm" onclick="closeModal('mViewUser');toast('Utilisateur suspendu','danger')">Suspendre</button>
-      <button class="btn btn-primary" onclick="closeModal('mViewUser')">Fermer</button>
+      <button class="btn btn-outline" onclick="closeModal('mDelUser')">Annuler</button>
+      <button class="btn btn-danger" onclick="confirmDeleteUser()">Supprimer</button>
     </div>
   </div>
 </div>
 
 <script src="app.js"></script>
-<script>
-buildLayout('Gestion Utilisateurs','utilisateurs');
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const avCols=['#2563eb','#06b6d4','#10b981','#8b5cf6','#f59e0b','#ef4444','#ec4899','#14b8a6'];
-let users=[
-  {n:'Mohamed Amine Kaci',e:'ma.kaci@email.com',t:'0555 112 233',v:'16-12345-A',ab:'Premium',s:'5,200',st:'Premium'},
-  {n:'Fatima Zohra Boudali',e:'fz.boudali@email.com',t:'0661 445 566',v:'16-98765-B',ab:'VIP',s:'12,000',st:'Actif'},
-  {n:'Youcef Benmansour',e:'y.benmans@email.com',t:'0770 223 344',v:'09-33210-C',ab:'Standard',s:'800',st:'Actif'},
-  {n:'Amina Hadj Salah',e:'a.hadjsalah@email.com',t:'0555 667 788',v:'16-54321-A',ab:'Premium',s:'3,450',st:'Premium'},
-  {n:'Karim Ouali',e:'k.ouali@email.com',t:'0661 998 877',v:'25-11122-B',ab:'Standard',s:'200',st:'Suspendu'},
-  {n:'Nour El Houda Amrani',e:'n.amrani@email.com',t:'0770 334 455',v:'16-77890-A',ab:'Standard',s:'1,100',st:'Actif'},
-  {n:'Rachid Belkacemi',e:'r.belk@email.com',t:'0555 889 900',v:'31-44556-C',ab:'VIP',s:'8,750',st:'Actif'},
-];
-const stMap={Actif:'b-green',Premium:'b-purple',Suspendu:'b-red',VIP:'b-cyan'};
-
-function renderUsers(data){
-  document.getElementById('tUBody').innerHTML=data.map((u,i)=>`<tr>
-    <td><div class="name-cell"><div class="av" style="background:${avCols[i%avCols.length]}">${u.n.charAt(0)}</div>${u.n}</div></td>
-    <td style="color:var(--muted)">${u.e}</td><td>${u.t}</td>
-    <td><code style="color:var(--cyan)">${u.v}</code></td>
-    <td>${u.ab}</td><td style="color:var(--green);font-weight:600">${u.s} DZD</td>
-    <td><span class="badge ${stMap[u.st]||'b-blue'}">${u.st}</span></td>
-    <td style="display:flex;gap:.3rem">
-      <button class="btn btn-outline btn-sm" onclick='viewU(${JSON.stringify(u)})'>Voir</button>
-      <button class="btn btn-danger btn-sm" onclick="toast('Supprimé','danger')">✕</button>
-    </td>
-  </tr>`).join('');
-}
-renderUsers(users);
-
-document.getElementById('srchU').oninput=function(){
-  renderUsers(users.filter(u=>JSON.stringify(u).toLowerCase().includes(this.value.toLowerCase())));
+const firebaseConfig = {
+  apiKey: "AIzaSyCi-UTQReIk0l5gA9ayDNgUrEIXWteDPXQ",
+  authDomain: "pfes-5bb45.firebaseapp.com",
+  projectId: "pfes-5bb45",
+  storageBucket: "pfes-5bb45.appspot.com",
+  messagingSenderId: "857843523698",
+  appId: "1:857843523698:web:a8cd7566edb367eee6e2eb"
 };
-function filterSt(v){renderUsers(v?users.filter(u=>u.st===v):users)}
 
-function viewU(u){
-  document.getElementById('viewUTitle').textContent=u.n;
-  document.getElementById('viewUBody').innerHTML=`
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const avCols = ['#6366f1','#06b6d4','#10b981','#8b5cf6','#f59e0b','#ef4444','#ec4899','#14b8a6'];
+let allUsers = [];
+let deleteUserId = null;
+
+async function loadUsers() {
+  try {
+    const snap = await getDocs(collection(db, 'users'));
+    allUsers = [];
+    const now = new Date();
+    const thisMonth = now.getMonth();
+    const thisYear = now.getFullYear();
+    let active = 0, withVehicle = 0, thisMonthCount = 0;
+
+    snap.forEach(d => {
+      const u = { id: d.id, ...d.data() };
+      allUsers.push(u);
+      if(u.status !== 'suspended') active++;
+      if(u.vehiclePlate || u.vehicle) withVehicle++;
+      if(u.createdAt) {
+        const date = new Date(u.createdAt.seconds * 1000);
+        if(date.getMonth() === thisMonth && date.getFullYear() === thisYear) thisMonthCount++;
+      }
+    });
+
+    document.getElementById('usersTotal').textContent = allUsers.length;
+    document.getElementById('usersActive').textContent = active;
+    document.getElementById('usersWithVehicle').textContent = withVehicle;
+    document.getElementById('usersThisMonth').textContent = thisMonthCount;
+
+    renderUsers(allUsers);
+  } catch(e) {
+    console.error(e);
+    toast('Erreur chargement utilisateurs', 'danger');
+  }
+}
+
+function renderUsers(data) {
+  if(data.length === 0) {
+    document.getElementById('tUBody').innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem">Aucun utilisateur trouvé</td></tr>`;
+    return;
+  }
+  document.getElementById('tUBody').innerHTML = data.map((u, i) => {
+    const name = u.name || u.nom || u.displayName || u.email?.split('@')[0] || '—';
+    const email = u.email || '—';
+    const phone = u.phone || u.telephone || '—';
+    const vehicle = u.vehiclePlate || u.vehicle || '—';
+    const date = u.createdAt ? new Date(u.createdAt.seconds * 1000).toLocaleDateString('fr-FR') : '—';
+    const suspended = u.status === 'suspended';
+    const stClass = suspended ? 'b-red' : 'b-green';
+    const stLabel = suspended ? 'Suspendu' : 'Actif';
+
+    return `<tr>
+      <td><div class="name-cell">
+        <div class="av" style="background:${avCols[i % avCols.length]}">${name.charAt(0).toUpperCase()}</div>
+        ${name}
+      </div></td>
+      <td style="color:var(--muted);font-size:11px">${email}</td>
+      <td>${phone}</td>
+      <td><code style="color:var(--blue2)">${vehicle}</code></td>
+      <td style="color:var(--muted);font-size:11px">${date}</td>
+      <td><span class="badge ${stClass}">${stLabel}</span></td>
+      <td style="display:flex;gap:.3rem">
+        <button class="btn btn-outline btn-sm" onclick='window._viewUser(${JSON.stringify(u)})'>Voir</button>
+        <button class="btn btn-danger btn-sm" onclick="window._delUser('${u.id}','${name}')">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+window.searchUsers = function(val) {
+  const q = val.toLowerCase();
+  renderUsers(allUsers.filter(u =>
+    (u.name||u.nom||u.email||'').toLowerCase().includes(q) ||
+    (u.email||'').toLowerCase().includes(q) ||
+    (u.vehiclePlate||u.vehicle||'').toLowerCase().includes(q)
+  ));
+};
+
+window._viewUser = function(u) {
+  const name = u.name || u.nom || u.displayName || '—';
+  document.getElementById('viewUTitle').textContent = name;
+  const date = u.createdAt ? new Date(u.createdAt.seconds * 1000).toLocaleDateString('fr-FR') : '—';
+  document.getElementById('viewUBody').innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;font-size:13px">
-      ${[['Email',u.e],['Téléphone',u.t],['Véhicule',`<code style="color:var(--cyan)">${u.v}</code>`],['Abonnement',u.ab],['Solde',`<span style="color:var(--green);font-weight:600">${u.s} DZD</span>`],['Statut',`<span class="badge ${stMap[u.st]}">${u.st}</span>`]].map(([l,v])=>`
-      <div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">${l}</div>${v}</div>`).join('')}
+      ${[
+        ['Nom', name],
+        ['Email', u.email || '—'],
+        ['Téléphone', u.phone || u.telephone || '—'],
+        ['Véhicule', `<code style="color:var(--blue2)">${u.vehiclePlate || u.vehicle || '—'}</code>`],
+        ['Inscription', date],
+        ['Statut', `<span class="badge ${u.status === 'suspended' ? 'b-red' : 'b-green'}">${u.status === 'suspended' ? 'Suspendu' : 'Actif'}</span>`],
+      ].map(([l, v]) => `
+        <div>
+          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">${l}</div>
+          <div>${v}</div>
+        </div>`).join('')}
     </div>`;
   openModal('mViewUser');
-}
+};
+
+window._delUser = function(id, name) {
+  deleteUserId = id;
+  document.getElementById('delUserName').textContent = name;
+  openModal('mDelUser');
+};
+
+window.confirmDeleteUser = async function() {
+  if(!deleteUserId) return;
+  try {
+    await deleteDoc(doc(db, 'users', deleteUserId));
+    closeModal('mDelUser');
+    toast('Utilisateur supprimé', 'danger');
+    loadUsers();
+  } catch(e) {
+    toast('Erreur: ' + e.message, 'danger');
+  }
+  deleteUserId = null;
+};
+
+buildLayout('Gestion Utilisateurs', 'utilisateurs');
+loadUsers();
 </script>
 </body>
 </html>

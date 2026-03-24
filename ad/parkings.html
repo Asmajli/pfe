@@ -4,6 +4,7 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ParkAdmin · Gestion Parkings</title>
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
 .zone-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:1rem;margin-bottom:2rem}
 .zone-card{
@@ -33,7 +34,7 @@
       <h2>🅿️ Gestion Parkings</h2>
       <p>Ajoutez et gérez les zones de parking</p>
     </div>
-    <button class="btn btn-primary" onclick="openModal('mAddZone')">+ Ajouter une zone</button>
+    <button class="btn btn-primary" onclick="openModal('mAddZone');initPickMap()">+ Ajouter une zone</button>
   </div>
 
   <div class="stats-row">
@@ -103,14 +104,14 @@
         <div style="font-size:11px;color:var(--muted);text-align:right">Total: <strong id="zTotalPreview" style="color:var(--blue2)">0</strong> places</div>
       </div>
 
-      <div class="f-row">
-        <div class="f-group">
-          <label class="f-label">Latitude (optionnel)</label>
-          <input class="inp f-input" id="zLat" type="number" placeholder="34.7406" step="0.0001">
-        </div>
-        <div class="f-group">
-          <label class="f-label">Longitude (optionnel)</label>
-          <input class="inp f-input" id="zLng" type="number" placeholder="10.7603" step="0.0001">
+      <div class="f-group" style="margin-bottom:0.5rem">
+        <label class="f-label">📍 Localisation sur la carte</label>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:0.5rem">Cliquez sur la carte pour définir la position du parking</div>
+        <div id="pickMap" style="height:220px;border-radius:10px;border:1px solid var(--border);overflow:hidden;cursor:crosshair"></div>
+        <div style="display:flex;gap:0.5rem;margin-top:0.5rem">
+          <input class="inp" id="zLat" type="number" placeholder="Latitude" step="0.0001" style="flex:1;font-size:11px" readonly>
+          <input class="inp" id="zLng" type="number" placeholder="Longitude" step="0.0001" style="flex:1;font-size:11px" readonly>
+          <button type="button" class="btn btn-outline btn-sm" onclick="useMyLocation()" title="Ma position">📍</button>
         </div>
       </div>
       <div id="zError" style="display:none;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:0.7rem 1rem;font-size:12px;color:var(--red);margin-top:0.5rem"></div>
@@ -141,6 +142,7 @@
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="app.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -345,6 +347,40 @@ window.confirmDeleteZone = async function() {
     toast('Erreur: ' + e.message, 'danger');
   }
   deleteZoneId = null;
+};
+
+// ── Pick map ──
+let pickMap = null, pickMarker = null;
+
+function initPickMap() {
+  if(pickMap) { pickMap.remove(); pickMap = null; pickMarker = null; }
+  setTimeout(() => {
+    pickMap = L.map('pickMap').setView([34.7406, 10.7603], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(pickMap);
+    pickMap.on('click', function(e) {
+      const {lat, lng} = e.latlng;
+      document.getElementById('zLat').value = lat.toFixed(6);
+      document.getElementById('zLng').value = lng.toFixed(6);
+      if(pickMarker) pickMarker.setLatLng(e.latlng);
+      else pickMarker = L.marker(e.latlng).addTo(pickMap);
+    });
+  }, 100);
+}
+
+window.useMyLocation = function() {
+  if(!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(pos => {
+    const lat = pos.coords.latitude, lng = pos.coords.longitude;
+    document.getElementById('zLat').value = lat.toFixed(6);
+    document.getElementById('zLng').value = lng.toFixed(6);
+    if(pickMap) {
+      pickMap.setView([lat, lng], 16);
+      if(pickMarker) pickMarker.setLatLng([lat, lng]);
+      else pickMarker = L.marker([lat, lng]).addTo(pickMap);
+    }
+  });
 };
 
 // ── Live total preview ──
