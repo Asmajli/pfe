@@ -110,7 +110,7 @@ class ReminderService {
 
   static const String _appId  = 'bbf1b2c9-e09d-4c2b-839f-3a7e8d0c5337';
   static const String _apiKey =
-      'os_v2_app_xpy3fspatvgcxa47hj7i2dctg774dndvxkfuanvsbrhjhb3ac6fkjnnjhpync4adotwvc34w7r6bkmmka2fwiwlqtgldrg5rs2qk2ry';
+      'os_v2_app_xpy3fspatvgcxa47hj7i2dctg5e2y67a32xumcuteqoajmcl5r7mzx6ah5xr67igo7qbm4wwu23q2csqs6r4ana7ty7qifbycmnqlqy';
 
   void scheduleReminders(Reservation r, String userId) {
     cancelReminders(r.id);

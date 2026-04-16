@@ -82,7 +82,7 @@ class _ParkAppState extends ConsumerState<ParkApp> {
 });
         } else if (user == null && _linkedUserId != null) {
           _linkedUserId = null;
-          OneSignal.logout();
+          // OneSignal.logout();
         }
       });
     });
