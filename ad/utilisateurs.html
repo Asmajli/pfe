@@ -96,6 +96,7 @@ async function loadUsers() {
     const thisMonth = now.getMonth();
     const thisYear = now.getFullYear();
     let active = 0, withVehicle = 0, thisMonthCount = 0;
+    console.log(allUsers)
 
     snap.forEach(d => {
       const u = { id: d.id, ...d.data() };

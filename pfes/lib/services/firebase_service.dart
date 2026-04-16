@@ -436,7 +436,7 @@ class ReminderService {
 // ══════════════════════════════════════════════════════
 class NotificationService {
   static const _apiKey =
-      'os_v2_app_xpy3fspatvgcxa47hj7i2dctg774dndvxkfuanvsbrhjhb3ac6fkjnnjhpync4adotwvc34w7r6bkmmka2fwiwlqtgldrg5rs2qk2ry';
+      'os_v2_app_xpy3fspatvgcxa47hj7i2dctg6sjl3m3ggwubs5teqlrh3swj5ao62dpxxkbrnsacqsephttsf3almnmxafds5m4q3woustouw7z63q';
   static const _appId = 'bbf1b2c9-e09d-4c2b-839f-3a7e8d0c5337';
 
   static Future<void> init() async {}
