@@ -1,55 +1,100 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:onesignal_flutter/onesignal_flutter.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
-
+import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:http/http.dart' as http;
 import '../models/models.dart';
-
 // ══════════════════════════════════════════════════════
-//  ONESIGNAL NOTIFICATION SERVICE
+//  AUTO SYNC SERVICE — appelé par Workmanager
+//  Fonctionne app fermée ✅
 // ══════════════════════════════════════════════════════
-class NotificationService {
-  static const appId      = 'bbf1b2c9-e09d-4c2b-839f-3a7e8d0c5337';
-  static const restApiKey = 'os_v2_app_xpy3fspatvgcxa47hj7i2dctg6pmvsteb37esdvgzfpmaaqdwqfq3hplvmayzob3tljegctkd6is6kocnairlzzmmdhssbwxuiznr7q';
+class AutoSyncService {
+  final _db = FirebaseFirestore.instance;
 
-  // ── Init OneSignal ──────────────────────────────────
-  static Future<void> init() async {
-    OneSignal.Debug.setLogLevel(OSLogLevel.none);
-    OneSignal.initialize(appId);
-    await OneSignal.Notifications.requestPermission(true);
+  static const String _appId  = 'bbf1b2c9-e09d-4c2b-839f-3a7e8d0c5337';
+  static const String _apiKey =
+      'os_v2_app_xpy3fspatvgcxa47hj7i2dctg774dndvxkfuanvsbrhjhb3ac6fkjnnjhpync4adotwvc34w7r6bkmmka2fwiwlqtgldrg5rs2qk2ry';
+
+  Future<void> syncAndNotify(String userId) async {
+    final now  = DateTime.now();
+    final snap = await _db
+        .collection('reservations')
+        .where('userId', isEqualTo: userId)
+        .where('status', whereIn: ['upcoming', 'active']).get();
+
+    for (final doc in snap.docs) {
+      final data      = doc.data();
+      final endTime   = (data['endTime']   as Timestamp?)?.toDate();
+      final startTime = (data['startTime'] as Timestamp?)?.toDate();
+      final status    = data['status']   as String? ?? '';
+      final zoneName  = data['zoneName'] as String? ?? 'parking';
+      final spotNumber = data['spotNumber'] as String? ?? '';
+      final hasEntered = data['entryTime'] != null;
+
+      if (endTime == null) continue;
+
+      // ── 1. Expirée → completed ──────────────────────
+      if (endTime.isBefore(now)) {
+        await doc.reference.update({'status': 'completed'});
+        continue;
+      }
+
+      // ── 2. Retard >30 min sans entrée → annuler ────
+      if (status == 'upcoming' && startTime != null && !hasEntered) {
+        final minsLate = now.difference(startTime).inMinutes;
+        if (minsLate >= 30) {
+          await doc.reference.update({
+            'status': 'cancelled',
+            'cancelReason': 'non_presentee',
+          });
+          await _db.collection('zones')
+              .doc(data['zoneId'] as String)
+              .update({'occupiedSpots': FieldValue.increment(-1)});
+          await _push(userId,
+            '❌ Réservation annulée',
+            'Absence >30 min. Place $spotNumber à $zoneName libérée.');
+          continue;
+        }
+      }
+
+      // ── 3. upcoming → active ────────────────────────
+      if (status == 'upcoming' &&
+          startTime != null &&
+          startTime.isBefore(now)) {
+        await doc.reference.update({'status': 'active'});
+      }
+
+      // ── 4. Rappels avant FIN ────────────────────────
+      final diff = endTime.difference(now).inMinutes;
+      if (diff <= 15 && diff > 5) {
+        await _push(userId,
+          '⏰ Rappel parking',
+          'Votre place $spotNumber à $zoneName expire dans $diff min.');
+      } else if (diff <= 5 && diff > 0) {
+        await _push(userId,
+          '🚨 Expiration imminente',
+          'Plus que $diff min — Place $spotNumber à $zoneName !');
+      }
+    }
   }
 
-  // ── Login user (lie le device au userId) ───────────
-  static void setUser(String userId) {
-    OneSignal.login(userId);
-  }
-
-  static void logoutUser() {
-    OneSignal.logout();
-  }
-
-  // ── Envoyer notification push via REST API ──────────
-  static Future<void> sendToUser({
-    required String userId,
-    required String title,
-    required String body,
-  }) async {
+  // ── API OneSignal correcte ──────────────────────────
+  Future<void> _push(String userId, String title, String body) async {
     try {
       await http.post(
-        Uri.parse('https://api.onesignal.com/notifications'),
+        Uri.parse('https://onesignal.com/api/v1/notifications'),
         headers: {
-          'Authorization': 'Key $restApiKey',
           'Content-Type': 'application/json',
+          'Authorization': 'Basic $_apiKey', // ← Basic, pas Bearer
         },
         body: jsonEncode({
-          'app_id': appId,
-          'include_aliases': {'external_id': [userId]},
+          'app_id': _appId,
+          'include_aliases': {            // ← include_aliases, pas filters
+            'external_id': [userId],
+          },
           'target_channel': 'push',
-          'headings': {'en': title, 'fr': title},
-          'contents': {'en': body, 'fr': body},
-          'small_icon': 'ic_stat_onesignal_default',
+          'headings': {'fr': title, 'en': title},
+          'contents': {'fr': body,  'en': body},
+          'priority': 10,
         }),
       );
     } catch (_) {}
@@ -57,98 +102,127 @@ class NotificationService {
 }
 
 // ══════════════════════════════════════════════════════
-//  RESERVATION REMINDER SERVICE
+//  REMINDER SERVICE — Timers locaux (app ouverte/fond)
+//  + OneSignal immédiat quand le timer se déclenche
 // ══════════════════════════════════════════════════════
-class ReservationReminderService {
-  final _timers = <String, List<Timer>>{};
+class ReminderService {
+  final Map<String, List<Timer>> _timers = {};
+
+  static const String _appId  = 'bbf1b2c9-e09d-4c2b-839f-3a7e8d0c5337';
+  static const String _apiKey =
+      'os_v2_app_xpy3fspatvgcxa47hj7i2dctg774dndvxkfuanvsbrhjhb3ac6fkjnnjhpync4adotwvc34w7r6bkmmka2fwiwlqtgldrg5rs2qk2ry';
 
   void scheduleReminders(Reservation r, String userId) {
-    if (r.endTime == null) return;
     cancelReminders(r.id);
+    if (r.endTime == null) return;
+
+    final now   = DateTime.now();
+    final start = r.startTime;
+    final end   = r.endTime!;
     final timers = <Timer>[];
-    final now    = DateTime.now();
 
-    // ── 15 min avant ──
-    final remind15 = r.endTime!.subtract(const Duration(minutes: 15));
-    if (remind15.isAfter(now)) {
-      timers.add(Timer(remind15.difference(now), () {
-        NotificationService.sendToUser(
-          userId: userId,
-          title: '⏰ Réservation bientôt expirée',
-          body: '${r.zoneName} — Il vous reste 15 min · Place ${r.spotNumber}',
-        );
-      }));
-    }
+    // ── 15 min avant DÉBUT ─────────────────────────────
+    _addTimer(timers,
+      start.subtract(const Duration(minutes: 15)), now, () => _push(userId,
+        '🅿️ Parking bientôt',
+        'Votre réservation à ${r.zoneName} commence dans 15 min — Place ${r.spotNumber}'));
 
-    // ── 5 min avant ──
-    final remind5 = r.endTime!.subtract(const Duration(minutes: 5));
-    if (remind5.isAfter(now)) {
-      timers.add(Timer(remind5.difference(now), () {
-        NotificationService.sendToUser(
-          userId: userId,
-          title: '🚨 Expire dans 5 min !',
-          body: '${r.zoneName} · Place ${r.spotNumber} — Prolonger ?',
-        );
-      }));
-    }
+    // ── 5 min avant DÉBUT ──────────────────────────────
+    _addTimer(timers,
+      start.subtract(const Duration(minutes: 5)), now, () => _push(userId,
+        '⚡ Parking dans 5 min !',
+        'Rendez-vous à ${r.zoneName} — Place ${r.spotNumber}'));
 
-    // ── À l'expiration ──
-    if (r.endTime!.isAfter(now)) {
-      timers.add(Timer(r.endTime!.difference(now), () {
-        NotificationService.sendToUser(
-          userId: userId,
-          title: '🅿️ Réservation expirée',
-          body: '${r.zoneName} · Place ${r.spotNumber} — Merci de libérer la place',
-        );
-      }));
-    }
+    // ── Auto-annulation +30 min sans entrée ────────────
+    _addTimer(timers,
+      start.add(const Duration(minutes: 30)), now, () async {
+        try {
+          final doc = await FirebaseFirestore.instance
+              .collection('reservations').doc(r.id).get();
+          if (!doc.exists) return;
+          final data       = doc.data() as Map<String, dynamic>;
+          final status     = data['status'] as String? ?? '';
+          final hasEntered = data['entryTime'] != null;
+          if (!hasEntered && (status == 'upcoming' || status == 'active')) {
+            await FirebaseFirestore.instance
+                .collection('reservations').doc(r.id)
+                .update({'status': 'cancelled', 'cancelReason': 'non_presentee'});
+            await FirebaseFirestore.instance
+                .collection('zones').doc(r.zoneId)
+                .update({'occupiedSpots': FieldValue.increment(-1)});
+            await _push(userId,
+              '❌ Réservation annulée',
+              'Absence >30 min. Place ${r.spotNumber} à ${r.zoneName} libérée.');
+          }
+        } catch (_) {}
+      });
+
+    // ── 15 min avant FIN ───────────────────────────────
+    _addTimer(timers,
+      end.subtract(const Duration(minutes: 15)), now, () => _push(userId,
+        '⏰ Rappel parking',
+        'Votre place ${r.spotNumber} à ${r.zoneName} expire dans 15 min'));
+
+    // ── 5 min avant FIN ────────────────────────────────
+    _addTimer(timers,
+      end.subtract(const Duration(minutes: 5)), now, () => _push(userId,
+        '⚠️ Expiration imminente',
+        'Votre place ${r.spotNumber} à ${r.zoneName} expire dans 5 min !'));
+
+    // ── À l'expiration ─────────────────────────────────
+    _addTimer(timers, end, now, () {
+      _push(userId, '🔴 Réservation expirée',
+          'Votre réservation à ${r.zoneName} est terminée');
+      FirebaseFirestore.instance
+          .collection('reservations').doc(r.id)
+          .update({'status': 'completed'});
+    });
 
     if (timers.isNotEmpty) _timers[r.id] = timers;
   }
 
-  void cancelReminders(String id) {
-    _timers[id]?.forEach((t) => t.cancel());
-    _timers.remove(id);
+  void _addTimer(List<Timer> list, DateTime when, DateTime now, Function() fn) {
+    final diff = when.difference(now);
+    if (!diff.isNegative && diff.inSeconds > 0) {
+      list.add(Timer(diff, fn));
+    }
   }
 
-  void dispose() {
-    for (final list in _timers.values) {
-      for (final t in list) { t.cancel(); }
+  Future<void> _push(String userId, String title, String body) async {
+    try {
+      await http.post(
+        Uri.parse('https://onesignal.com/api/v1/notifications'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Basic $_apiKey',
+        },
+        
+        body: jsonEncode({
+          'app_id': _appId,
+          'include_aliases': {'external_id': [userId]},
+          'target_channel': 'push',
+          'headings': {'fr': title, 'en': title},
+          'contents': {'fr': body,  'en': body},
+          'priority': 10,
+        }),
+      );
+    } catch (_) {}
+  }
+
+  // Compatibilité ancien code
+  void scheduleFor(String reservationId, String zoneName, DateTime endTime) {}
+
+  void cancelReminders(String resvId) {
+    _timers[resvId]?.forEach((t) => t.cancel());
+    _timers.remove(resvId);
+  }
+
+  void cancelFor(String reservationId) => cancelReminders(reservationId);
+
+  void cancelAll() {
+    for (final timers in _timers.values) {
+      for (final t in timers) t.cancel();
     }
     _timers.clear();
   }
 }
-
-final reminderServiceProvider = Provider<ReservationReminderService>((ref) {
-  final s = ReservationReminderService();
-  ref.onDispose(s.dispose);
-  return s;
-});
-
-// ══════════════════════════════════════════════════════
-//  PROLONGATION SERVICE
-// ══════════════════════════════════════════════════════
-class ProlongationService {
-  final _db = FirebaseFirestore.instance;
-
-  Future<DateTime> prolonger({
-    required String reservationId,
-    required int extraMinutes,
-    required double pricePerHour,
-  }) async {
-    final doc = await _db.collection('reservations').doc(reservationId).get();
-    if (!doc.exists) throw 'Réservation introuvable';
-    final r = Reservation.fromDoc(doc);
-    final newEnd    = (r.endTime ?? DateTime.now()).add(Duration(minutes: extraMinutes));
-    final extraCost = (extraMinutes / 60.0) * pricePerHour;
-    final newTotal  = (r.totalAmount ?? 0) + extraCost;
-    await _db.collection('reservations').doc(reservationId).update({
-      'endTime'    : Timestamp.fromDate(newEnd),
-      'totalAmount': newTotal,
-      'status'     : 'active',
-    });
-    return newEnd;
-  }
-}
-
-final prolongationServiceProvider = Provider((_) => ProlongationService());

@@ -106,7 +106,7 @@ class StatusBadge extends StatelessWidget {
         Container(width: 5, height: 5,
             decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         const SizedBox(width: 5),
-        Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+        Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textPri,)),
       ]),
     );
   }
@@ -206,38 +206,71 @@ class StatCard extends StatelessWidget {
 
 // ── TEXT FIELD ─────────────────────────────────────────
 class ParkField extends StatelessWidget {
-  final String label, hint;
+  final String label;
+  final String hint;
   final TextEditingController controller;
+
   final bool obscure;
   final TextInputType? keyboardType;
   final String? Function(String?)? validator;
-  final Widget? prefix, suffix;
+
+  final Widget? prefix;
+  final Widget? suffix;
+
   final bool readOnly;
   final VoidCallback? onTap;
+
   final int maxLines;
 
+  final Function(String)? onChanged; // ✅ الجديد
+
   const ParkField({
-    super.key, required this.label, required this.hint,
-    required this.controller, this.obscure = false,
-    this.keyboardType, this.validator, this.prefix, this.suffix,
-    this.readOnly = false, this.onTap, this.maxLines = 1,
+    super.key,
+    required this.label,
+    required this.hint,
+    required this.controller,
+    this.obscure = false,
+    this.keyboardType,
+    this.validator,
+    this.prefix,
+    this.suffix,
+    this.readOnly = false,
+    this.onTap,
+    this.maxLines = 1,
+    this.onChanged, // ✅ الجديد
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(label.toUpperCase(), style: const TextStyle(
-          fontSize: 10, fontWeight: FontWeight.w600,
-          color: AppColors.textMuted, letterSpacing: 0.8)),
-      const SizedBox(height: 8),
-      TextFormField(
-        controller: controller, obscureText: obscure,
-        keyboardType: keyboardType, validator: validator,
-        readOnly: readOnly, onTap: onTap, maxLines: maxLines,
-        style: const TextStyle(color: AppColors.textPri, fontSize: 14),
-        decoration: InputDecoration(hintText: hint, prefixIcon: prefix, suffixIcon: suffix),
-      ),
-    ]);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label.toUpperCase(),
+            style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textMuted,
+                letterSpacing: 0.8)),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          obscureText: obscure,
+          keyboardType: keyboardType,
+          validator: validator,
+          readOnly: readOnly,
+          onTap: onTap,
+          maxLines: maxLines,
+          onChanged: onChanged, // ✅ أهم سطر
+          style: const TextStyle(
+              color: AppColors.textPri, fontSize: 14),
+          decoration: InputDecoration(
+            hintText: hint,
+            prefixIcon: prefix,
+            suffixIcon: suffix,
+          ),
+        ),
+      ],
+    );
   }
 }
 

@@ -6,12 +6,8 @@
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
-.zone-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:1rem;margin-bottom:2rem}
-.zone-card{
-  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
-  padding:1.4rem;position:relative;overflow:hidden;
-  transition:all .2s;cursor:pointer;box-shadow:var(--shadow);
-}
+.zone-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1rem;margin-bottom:2rem}
+.zone-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.4rem;position:relative;transition:all .2s;cursor:pointer;box-shadow:var(--shadow)}
 .zone-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);border-color:rgba(99,102,241,0.3)}
 .zc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.8rem}
 .zc-name{font-size:1rem;font-weight:700;color:var(--text)}
@@ -21,6 +17,8 @@
 .zc-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--text2)}
 .zc-del{background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 6px;border-radius:6px;transition:all 0.15s}
 .zc-del:hover{background:rgba(239,68,68,0.1);color:var(--red)}
+.agent-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.25);border-radius:6px;padding:3px 8px;font-size:10px;color:var(--blue2);font-weight:600;margin-top:6px}
+.no-agent-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:6px;padding:3px 8px;font-size:10px;color:var(--red);font-weight:600;margin-top:6px}
 .empty-state{text-align:center;padding:3rem;color:var(--muted);font-size:13px;grid-column:1/-1}
 .empty-state .ei{font-size:3rem;margin-bottom:1rem}
 </style>
@@ -28,12 +26,8 @@
 <body>
 <div class="layout">
 <div class="main">
-
   <div class="page-hdr">
-    <div class="page-hdr-left">
-      <h2>🅿️ Gestion Parkings</h2>
-      <p>Ajoutez et gérez les zones de parking</p>
-    </div>
+    <div class="page-hdr-left"><h2>🅿️ Gestion Parkings</h2><p>Ajoutez et gérez les zones de parking</p></div>
     <button class="btn btn-primary" onclick="openModal('mAddZone');initPickMap()">+ Ajouter une zone</button>
   </div>
 
@@ -48,7 +42,6 @@
     <div class="empty-state"><div class="ei">⏳</div><div>Chargement...</div></div>
   </div>
 
-  <!-- Reservations from Firebase -->
   <div class="panel">
     <div class="panel-hdr">
       <span class="panel-title">📋 Réservations</span>
@@ -79,6 +72,15 @@
         <input class="inp f-input" id="zNom" placeholder="Ex: Parking Centre-Ville" style="width:100%">
       </div>
 
+      <!-- Agent assigné -->
+      <div class="f-group" style="margin-bottom:1rem">
+        <label class="f-label">🛡️ Agent responsable <span style="color:var(--red)">*</span></label>
+        <select class="inp f-input" id="zAgent" style="width:100%">
+          <option value="">— Choisir un agent —</option>
+        </select>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">Chaque parking doit avoir un agent assigné</div>
+      </div>
+
       <div style="background:var(--surface);border-radius:10px;padding:1rem;margin-bottom:1rem">
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:0.8rem">Places par type</div>
         <div class="f-row">
@@ -106,8 +108,8 @@
 
       <div class="f-group" style="margin-bottom:0.5rem">
         <label class="f-label">📍 Localisation sur la carte</label>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:0.5rem">Cliquez sur la carte pour définir la position du parking</div>
-        <div id="pickMap" style="height:220px;border-radius:10px;border:1px solid var(--border);overflow:hidden;cursor:crosshair"></div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:0.5rem">Cliquez sur la carte pour définir la position</div>
+        <div id="pickMap" style="height:160px;border-radius:10px;border:1px solid var(--border);overflow:hidden;cursor:crosshair"></div>
         <div style="display:flex;gap:0.5rem;margin-top:0.5rem">
           <input class="inp" id="zLat" type="number" placeholder="Latitude" step="0.0001" style="flex:1;font-size:11px" readonly>
           <input class="inp" id="zLng" type="number" placeholder="Longitude" step="0.0001" style="flex:1;font-size:11px" readonly>
@@ -146,7 +148,7 @@
 <script src="app.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCi-UTQReIk0l5gA9ayDNgUrEIXWteDPXQ",
@@ -159,10 +161,30 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-
 const zoneColors = ['var(--blue2)','var(--green)','var(--yellow)','var(--purple)','var(--cyan)','var(--red)'];
 let zoneList = [];
+let agentList = [];
 let deleteZoneId = null;
+
+// ── Load agents for select ──
+async function loadAgents() {
+  const snap = await getDocs(collection(db, 'admins'));
+  agentList = [];
+  snap.forEach(d => {
+    const r = d.data();
+    if (r.role === 'agent' || r.role === 'responsable') {
+      agentList.push({ id: d.id, ...r });
+    }
+  });
+  const sel = document.getElementById('zAgent');
+  sel.innerHTML = '<option value="">— Choisir un agent —</option>';
+  agentList.forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a.id;
+    opt.textContent = (a.name || a.nom || '—') + ' · ' + (a.zoneName || a.zone || 'Sans zone');
+    sel.appendChild(opt);
+  });
+}
 
 // ── Load zones ──
 async function loadZones() {
@@ -170,22 +192,18 @@ async function loadZones() {
     const snap = await getDocs(collection(db, 'zones'));
     zoneList = [];
     let total = 0, occ = 0;
-
     snap.forEach(d => {
       const z = d.data();
       zoneList.push({id: d.id, ...z});
       total += (z.totalSpots || 0);
       occ += (z.occupiedSpots || 0);
     });
-
     document.getElementById('totalPlaces').textContent = total;
     document.getElementById('freePlaces').textContent = total - occ;
     document.getElementById('occPlaces').textContent = occ;
     document.getElementById('zonesCount').textContent = zoneList.length;
-
     renderZoneCards();
   } catch(e) {
-    console.error(e);
     toast('Erreur chargement zones', 'danger');
   }
 }
@@ -193,11 +211,7 @@ async function loadZones() {
 function renderZoneCards() {
   const grid = document.getElementById('zoneCards');
   if(zoneList.length === 0) {
-    grid.innerHTML = `<div class="empty-state">
-      <div class="ei">🅿️</div>
-      <div>Aucune zone enregistrée</div>
-      <div style="margin-top:0.5rem;font-size:11px">Cliquez sur "+ Ajouter une zone" pour commencer</div>
-    </div>`;
+    grid.innerHTML = `<div class="empty-state"><div class="ei">🅿️</div><div>Aucune zone enregistrée</div></div>`;
     return;
   }
   grid.innerHTML = zoneList.map((z,i) => {
@@ -208,20 +222,26 @@ function renderZoneCards() {
     const sp = z.spots || {};
     const spotsHTML = Object.entries({
       '🚗 Standard': sp.standard,
-      '⭐ VIP':      sp.vip,
+      '⭐ VIP': sp.vip,
       '♿ Handicapé': sp.handicap,
-      '🏍 Moto':    sp.moto,
+      '🏍 Moto': sp.moto,
     }).filter(([,v]) => v && v.total > 0).map(([label, v]) =>
       `<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text2)">
         <span>${label}</span>
-        <span style="font-weight:600">${v.total - (v.occupied||0)} / ${v.total}</span>
+        <span style="font-weight:600">${v.total-(v.occupied||0)} / ${v.total}</span>
       </div>`
     ).join('');
+
+    const agentBadge = z.agentName
+      ? `<div class="agent-badge">🛡️ ${z.agentName}</div>`
+      : `<div class="no-agent-badge">⚠️ Aucun agent</div>`;
+
     return `<div class="zone-card" style="border-top:3px solid ${color}">
       <div class="zc-top">
         <div>
           <div class="zc-name">${z.name || z.nom || '—'}</div>
           <div class="zc-type">${total} places au total</div>
+          ${agentBadge}
         </div>
         <button class="zc-del" onclick="window._delZone('${z.id}','${z.name||z.nom||''}')">🗑</button>
       </div>
@@ -242,36 +262,30 @@ async function loadReservations() {
     const rows = [];
     snap.forEach(d => rows.push({id: d.id, ...d.data()}));
     rows.sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
-
-    const stMap = {
-      active: 'b-green', confirmed: 'b-green',
-      pending: 'b-yellow', reserved: 'b-yellow',
-      completed: 'b-blue', expired: 'b-red', cancelled: 'b-red'
-    };
-
+    const stMap = { active:'b-green', confirmed:'b-green', pending:'b-yellow', reserved:'b-yellow', completed:'b-blue', expired:'b-red', cancelled:'b-red' };
     document.getElementById('tParkBody').innerHTML = rows.length === 0
       ? `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">Aucune réservation</td></tr>`
       : rows.map(r => {
           const date = r.createdAt ? new Date(r.createdAt.seconds*1000).toLocaleDateString('fr-FR') : '—';
           const st = r.status || 'active';
-          const stClass = stMap[st] || 'b-blue';
           return `<tr>
             <td>${r.userName || r.userId?.substring(0,8) || '—'}</td>
             <td><span class="badge b-blue">${r.zoneName || r.zoneId || '—'}</span></td>
             <td><code style="color:var(--blue2)">${r.vehiclePlate || '—'}</code></td>
             <td>${date}</td>
-            <td style="color:var(--green);font-weight:600">${r.totalPrice || r.price || 0} DT</td>
-            <td><span class="badge ${stClass}">${st}</span></td>
+            <td style="color:var(--green);font-weight:600">${r.totalAmount || 0} DT</td>
+            <td><span class="badge ${stMap[st]||'b-blue'}">${st}</span></td>
           </tr>`;
         }).join('');
-  } catch(e) {
-    console.error(e);
-  }
+  } catch(e) { console.error(e); }
 }
 
 // ── Save zone ──
 window.saveZone = async function() {
   const nom      = document.getElementById('zNom').value.trim();
+  const agentEl  = document.getElementById('zAgent');
+  const agentId  = agentEl.value;
+  const agentName = agentEl.options[agentEl.selectedIndex]?.text?.split(' · ')[0] || '';
   const standard = parseInt(document.getElementById('zStandard').value) || 0;
   const vip      = parseInt(document.getElementById('zVip').value) || 0;
   const handicap = parseInt(document.getElementById('zHandicap').value) || 0;
@@ -282,9 +296,9 @@ window.saveZone = async function() {
   const total    = standard + vip + handicap + moto;
 
   errEl.style.display = 'none';
-
-  if(!nom) { errEl.style.display='block'; errEl.textContent='⚠️ Le nom est obligatoire.'; return; }
-  if(total < 1) { errEl.style.display='block'; errEl.textContent='⚠️ Ajoutez au moins 1 place.'; return; }
+  if (!nom)         { errEl.style.display='block'; errEl.textContent='⚠️ Le nom est obligatoire.'; return; }
+  if (!agentId)     { errEl.style.display='block'; errEl.textContent='⚠️ Veuillez choisir un agent responsable.'; return; }
+  if (total < 1)    { errEl.style.display='block'; errEl.textContent='⚠️ Ajoutez au moins 1 place.'; return; }
 
   const btn = document.getElementById('btnSaveZone');
   const txt = document.getElementById('btnSaveZoneTxt');
@@ -292,13 +306,12 @@ window.saveZone = async function() {
 
   try {
     const zoneData = {
-      name: nom,
-      nom: nom,
-      totalSpots: total,
-      occupiedSpots: 0,
-      availableSpots: total,
+      name: nom, nom,
+      totalSpots: total, occupiedSpots: 0,
       isOpen: true,
       status: 'active',
+      agentId,
+      agentName,
       spots: {
         standard: { total: standard, occupied: 0, pricePerHour: 2.5 },
         vip:      { total: vip,      occupied: 0, pricePerHour: 4.0 },
@@ -307,19 +320,24 @@ window.saveZone = async function() {
       },
       createdAt: serverTimestamp(),
     };
-    if(lat) zoneData.latitude = lat;
-    if(lng) zoneData.longitude = lng;
+    if (lat) zoneData.latitude = lat;
+    if (lng) zoneData.longitude = lng;
 
-    await addDoc(collection(db, 'zones'), zoneData);
+    const zoneRef = await addDoc(collection(db, 'zones'), zoneData);
+
+    // ── Mettre à jour l'agent avec la zone assignée ──
+    await updateDoc(doc(db, 'admins', agentId), {
+      zone: zoneRef.id,
+      zoneName: nom,
+    });
 
     closeModal('mAddZone');
-    toast('✅ Parking ajouté avec succès !', 'success');
-
+    toast('✅ Parking ajouté et agent assigné !', 'success');
     ['zNom','zStandard','zVip','zHandicap','zMoto','zLat','zLng'].forEach(id => {
       document.getElementById(id).value = '';
     });
+    document.getElementById('zAgent').selectedIndex = 0;
     document.getElementById('zTotalPreview').textContent = '0';
-
     loadZones();
   } catch(e) {
     errEl.style.display = 'block';
@@ -337,12 +355,24 @@ window._delZone = function(id, name) {
 };
 
 window.confirmDeleteZone = async function() {
-  if(!deleteZoneId) return;
+  if (!deleteZoneId) return;
   try {
+    const zone = zoneList.find(z => z.id === deleteZoneId);
+
+    // 🔥 نحرّر الـ agent
+    if (zone?.agentId) {
+      await updateDoc(doc(db, 'admins', zone.agentId), {
+        zone: null,
+        zoneName: null,
+      });
+    }
+
     await deleteDoc(doc(db, 'zones', deleteZoneId));
+
     closeModal('mDelZone');
-    toast('Zone supprimée', 'danger');
+    toast('Zone supprimée — agent libéré', 'danger');
     loadZones();
+
   } catch(e) {
     toast('Erreur: ' + e.message, 'danger');
   }
@@ -351,53 +381,59 @@ window.confirmDeleteZone = async function() {
 
 // ── Pick map ──
 let pickMap = null, pickMarker = null;
-
 function initPickMap() {
-  if(pickMap) { pickMap.remove(); pickMap = null; pickMarker = null; }
+  if (pickMap) { pickMap.remove(); pickMap = null; pickMarker = null; }
   setTimeout(() => {
     pickMap = L.map('pickMap').setView([34.7406, 10.7603], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap'
-    }).addTo(pickMap);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(pos => {
+        pickMap.setView([pos.coords.latitude, pos.coords.longitude], 15);
+        if (pickMarker) pickMarker.setLatLng([pos.coords.latitude, pos.coords.longitude]);
+        else pickMarker = L.marker([pos.coords.latitude, pos.coords.longitude]).addTo(pickMap);
+        document.getElementById('zLat').value = pos.coords.latitude.toFixed(6);
+        document.getElementById('zLng').value = pos.coords.longitude.toFixed(6);
+      });
+    }
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(pickMap);
     pickMap.on('click', function(e) {
       const {lat, lng} = e.latlng;
       document.getElementById('zLat').value = lat.toFixed(6);
       document.getElementById('zLng').value = lng.toFixed(6);
-      if(pickMarker) pickMarker.setLatLng(e.latlng);
+      if (pickMarker) pickMarker.setLatLng(e.latlng);
       else pickMarker = L.marker(e.latlng).addTo(pickMap);
     });
   }, 100);
 }
 
 window.useMyLocation = function() {
-  if(!navigator.geolocation) return;
+  if (!navigator.geolocation) return;
   navigator.geolocation.getCurrentPosition(pos => {
     const lat = pos.coords.latitude, lng = pos.coords.longitude;
     document.getElementById('zLat').value = lat.toFixed(6);
     document.getElementById('zLng').value = lng.toFixed(6);
-    if(pickMap) {
+    if (pickMap) {
       pickMap.setView([lat, lng], 16);
-      if(pickMarker) pickMarker.setLatLng([lat, lng]);
+      if (pickMarker) pickMarker.setLatLng([lat, lng]);
       else pickMarker = L.marker([lat, lng]).addTo(pickMap);
     }
   });
 };
 
-// ── Live total preview ──
-function updateTotal() {
-  const s = parseInt(document.getElementById('zStandard')?.value)||0;
-  const v = parseInt(document.getElementById('zVip')?.value)||0;
-  const h = parseInt(document.getElementById('zHandicap')?.value)||0;
-  const m = parseInt(document.getElementById('zMoto')?.value)||0;
-  const el = document.getElementById('zTotalPreview');
-  if(el) el.textContent = s+v+h+m;
-}
 document.addEventListener('input', e => {
-  if(['zStandard','zVip','zHandicap','zMoto'].includes(e.target.id)) updateTotal();
+  if (['zStandard','zVip','zHandicap','zMoto'].includes(e.target.id)) {
+    const s = parseInt(document.getElementById('zStandard')?.value)||0;
+    const v = parseInt(document.getElementById('zVip')?.value)||0;
+    const h = parseInt(document.getElementById('zHandicap')?.value)||0;
+    const m = parseInt(document.getElementById('zMoto')?.value)||0;
+    const el = document.getElementById('zTotalPreview');
+    if (el) el.textContent = s+v+h+m;
+  }
 });
 
-// ── Init ──
+window.initPickMap = initPickMap;
+
 buildLayout('Gestion Parkings', 'parkings');
+loadAgents();
 loadZones();
 loadReservations();
 </script>

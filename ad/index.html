@@ -23,10 +23,6 @@
 .act-time{margin-left:auto;font-size:10px;color:var(--muted);white-space:nowrap;padding-left:1rem}
 .occ-bar-track{height:7px;background:rgba(255,255,255,0.05);border:1px solid var(--border2);margin-top:0.35rem}
 .occ-bar-fill{height:100%;transition:width 1.2s ease}
-.quick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0.8rem;margin-top:1.5rem}
-.quick-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.5rem;padding:1.3rem 1rem;background:var(--card);border:1px solid var(--border);color:var(--text2);font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.08em;transition:all .18s;cursor:pointer;}
-.quick-btn:hover{border-color:var(--blue2);background:rgba(37,99,235,0.08);color:var(--text);transform:translateY(-2px)}
-.quick-btn .qi{font-size:1.7rem}
 </style>
 </head>
 <body>
@@ -49,7 +45,7 @@
     <div class="stat-card c-green"><div class="stat-ico">🚗</div><div class="stat-val" id="occupiedPlaces">—</div><div class="stat-lbl">Occupées maintenant</div></div>
     <div class="stat-card c-cyan"><div class="stat-ico">👥</div><div class="stat-val" id="usersCount">—</div><div class="stat-lbl">Utilisateurs inscrits</div></div>
     <div class="stat-card c-yellow"><div class="stat-ico">💰</div><div class="stat-val" id="revenue">—</div><div class="stat-lbl">Revenus totaux (DT)</div></div>
-    <div class="stat-card c-purple"><div class="stat-ico">🛡️</div><div class="stat-val" id="adminsCount">—</div><div class="stat-lbl">Responsables actifs</div></div>
+    <div class="stat-card c-purple"><div class="stat-ico">🛡️</div><div class="stat-val" id="adminsCount">—</div><div class="stat-lbl">Agents actifs</div></div>
     <div class="stat-card c-red"><div class="stat-ico">📋</div><div class="stat-val" id="resvCount">—</div><div class="stat-lbl">Réservations totales</div></div>
   </div>
 
@@ -72,17 +68,6 @@
       <span style="font-size:11px;color:var(--muted)">Depuis Firestore · temps réel</span>
     </div>
     <ul class="act-list" id="actList"><li class="act-item"><span style="color:var(--muted)">Chargement...</span></li></ul>
-  </div>
-
-  <!-- Accès rapides -->
-  <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.15em;color:var(--muted);margin-bottom:.6rem">Accès rapides</div>
-  <div class="quick-grid">
-    <div class="quick-btn" onclick="location.href='parkings.html'"><span class="qi">🅿️</span>Gestion Parkings</div>
-    <div class="quick-btn" onclick="location.href='utilisateurs.html'"><span class="qi">👤</span>Utilisateurs</div>
-    <div class="quick-btn" onclick="location.href='responsables.html'"><span class="qi">🛡️</span>Responsables</div>
-    <div class="quick-btn" onclick="location.href='statistiques.html'"><span class="qi">📊</span>Statistiques</div>
-    <div class="quick-btn" onclick="location.href='avis.html'"><span class="qi">⭐</span>Avis Clients</div>
-    <div class="quick-btn" onclick="toast('Rapport exporté !','success')"><span class="qi">📄</span>Exporter rapport</div>
   </div>
 
 </div>
@@ -133,7 +118,6 @@ async function loadDashboard() {
       getDocs(query(collection(db, 'vehicle_logs'), orderBy('timestamp','desc'), limit(10))),
     ]);
 
-    // ── Zones ──
     const zones = [];
     zonesSnap.forEach(d => zones.push({ id: d.id, ...d.data() }));
     const totalSpots    = zones.reduce((s,z) => s + (z.totalSpots||0), 0);
@@ -141,19 +125,16 @@ async function loadDashboard() {
     document.getElementById('totalPlaces').textContent    = totalSpots;
     document.getElementById('occupiedPlaces').textContent = occupiedSpots;
     document.getElementById('zonesTag').textContent       = `🏢 ${zones.length} zones actives`;
+    document.getElementById('usersCount').textContent     = usersSnap.size;
+    document.getElementById('adminsCount').textContent    = adminsSnap.size;
 
-    // ── Users & Admins ──
-    document.getElementById('usersCount').textContent  = usersSnap.size;
-    document.getElementById('adminsCount').textContent = adminsSnap.size;
-
-    // ── Reservations ──
     const resvs = [];
     resvSnap.forEach(d => resvs.push({ id: d.id, ...d.data() }));
     document.getElementById('resvCount').textContent = resvs.length;
     const totalRevenue = resvs.reduce((s,r) => s + (r.totalAmount||0), 0);
     document.getElementById('revenue').textContent = totalRevenue.toFixed(1) + ' DT';
 
-    // ── Revenue chart ──
+    // Revenue chart
     const monthlyRev = {};
     resvs.forEach(r => {
       if (r.createdAt?.seconds) {
@@ -176,7 +157,7 @@ async function loadDashboard() {
           </div>`;
         }).join('');
 
-    // ── Occupation zones ──
+    // Occupation zones
     const occEl = document.getElementById('occZones');
     occEl.innerHTML = zones.length === 0
       ? '<div style="color:var(--muted);font-size:12px">Aucune zone enregistrée</div>'
@@ -194,7 +175,7 @@ async function loadDashboard() {
           </div>`;
         }).join('');
 
-    // ── Activité récente (vehicle_logs réels) ──
+    // Activité récente
     const logs = [];
     logsSnap.forEach(d => logs.push({ id: d.id, ...d.data() }));
     const actEl = document.getElementById('actList');
@@ -211,7 +192,6 @@ async function loadDashboard() {
 
   } catch(e) {
     console.error(e);
-    toast('Erreur chargement dashboard', 'danger');
   }
 }
 

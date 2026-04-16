@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ParkAdmin · Gestion Agents</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.resp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem;margin-bottom:2rem}
+.resp-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.4rem;transition:all .2s;box-shadow:var(--shadow)}
+.resp-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.rc-head{display:flex;align-items:center;gap:0.9rem;margin-bottom:1rem}
+.rc-av{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:white;flex-shrink:0}
+.rc-name{font-size:14px;font-weight:700;line-height:1.2;color:var(--text)}
+.rc-role{font-size:10px;color:var(--muted)}
+.rc-info{font-size:11px;line-height:2;color:var(--text2)}
+.rc-actions{display:flex;gap:.5rem;margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem}
+.parking-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);border-radius:6px;padding:3px 8px;font-size:10px;color:var(--green);font-weight:600}
+.no-parking-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:6px;padding:3px 8px;font-size:10px;color:var(--red);font-weight:600}
+.empty-state{text-align:center;padding:3rem;color:var(--muted);font-size:13px;grid-column:1/-1}
+.empty-state .ei{font-size:3rem;margin-bottom:1rem}
+</style>
+</head>
+<body>
+<div class="layout">
+<div class="main">
+  <div class="page-hdr">
+    <div class="page-hdr-left"><h2>🛡️ Gestion Agents</h2><p>Comptes agents de l'application mobile</p></div>
+    <button class="btn btn-primary" onclick="openModal('mAddResp')">+ Nouvel agent</button>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card c-blue"><div class="stat-ico">🛡️</div><div class="stat-val" id="respTotal">—</div><div class="stat-lbl">Total agents</div></div>
+    <div class="stat-card c-green"><div class="stat-ico">🅿️</div><div class="stat-val" id="respAssigned">—</div><div class="stat-lbl">Avec parking</div></div>
+    <div class="stat-card c-red"><div class="stat-ico">⚠️</div><div class="stat-val" id="respUnassigned">—</div><div class="stat-lbl">Sans parking</div></div>
+    <div class="stat-card c-purple"><div class="stat-ico">📅</div><div class="stat-val" id="respThisMonth">—</div><div class="stat-lbl">Ce mois</div></div>
+  </div>
+
+  <div class="resp-grid" id="respGrid">
+    <div class="empty-state"><div class="ei">⏳</div><div>Chargement...</div></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-hdr">
+      <span class="panel-title">📋 Liste des agents</span>
+      <input id="srchR" class="inp" placeholder="Rechercher..." style="width:180px" oninput="searchResp(this.value)">
+    </div>
+    <div class="tbl-wrap">
+      <table id="tR">
+        <thead><tr><th>Agent</th><th>Email</th><th>Téléphone</th><th>Parking assigné</th><th>Inscription</th><th>Actions</th></tr></thead>
+        <tbody id="tRBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Modal Ajouter Agent -->
+<div class="modal-ov" id="mAddResp">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-hdr-title">➕ Nouvel agent</span>
+      <button class="modal-close" onclick="closeModal('mAddResp')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="f-row">
+        <div class="f-group">
+          <label class="f-label">Nom complet</label>
+          <input class="inp f-input" id="rNom" placeholder="Ex: Ali Ben Salem">
+        </div>
+        <div class="f-group">
+          <label class="f-label">Téléphone</label>
+          <input class="inp f-input" id="rPhone" placeholder="+216 XX XXX XXX">
+        </div>
+      </div>
+      <div class="f-row">
+        <div class="f-group">
+          <label class="f-label">Email</label>
+          <input class="inp f-input" id="rEmail" type="email" placeholder="ali@parking.tn">
+        </div>
+        <div class="f-group">
+          <label class="f-label">Mot de passe</label>
+          <input class="inp f-input" id="rPassword" type="password" placeholder="Min. 6 caractères">
+        </div>
+      </div>
+      <div style="background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.2);border-radius:8px;padding:0.8rem;margin-top:0.5rem;font-size:12px;color:var(--blue2)">
+        ℹ️ Le parking sera assigné depuis la page <strong>Gestion Parkings</strong> lors de la création du parking.
+      </div>
+      <div id="rError" style="display:none;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:0.7rem 1rem;font-size:12px;color:var(--red);margin-top:0.8rem"></div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-outline" onclick="closeModal('mAddResp')">Annuler</button>
+      <button class="btn btn-primary" id="btnSaveResp" onclick="saveResp()">
+        <span id="btnSaveRespTxt">Créer le compte</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Supprimer -->
+<div class="modal-ov" id="mDelResp">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-hdr">
+      <span class="modal-hdr-title">⚠️ Supprimer l'agent</span>
+      <button class="modal-close" onclick="closeModal('mDelResp')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text2)">Supprimer <strong id="delRespName"></strong> ? Son compte Firestore sera supprimé.</p>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-outline" onclick="closeModal('mDelResp')">Annuler</button>
+      <button class="btn btn-danger" onclick="confirmDeleteResp()">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Assigner Parking -->
+<div class="modal-ov" id="mAssignParking">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-hdr">
+      <span class="modal-hdr-title">🅿️ Assigner un parking</span>
+      <button class="modal-close" onclick="closeModal('mAssignParking')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text2);margin-bottom:1rem">
+        Assigner un parking à <strong id="assignAgentName"></strong>
+      </p>
+      <div class="f-group">
+        <label class="f-label">🅿️ Choisir un parking</label>
+        <select class="inp f-input" id="assignZoneSelect" style="width:100%">
+          <option value="">— Choisir un parking —</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-outline" onclick="closeModal('mAssignParking')">Annuler</button>
+      <button class="btn btn-primary" onclick="confirmAssignParking()">Assigner</button>
+    </div>
+  </div>
+</div>
+<!-- Modal Modifier -->
+<div class="modal-ov" id="mEditResp">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-hdr-title">✏️ Modifier agent</span>
+      <button class="modal-close" onclick="closeModal('mEditResp')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editRespId">
+
+      <div class="f-group">
+        <label>Nom</label>
+        <input class="inp" id="editNom">
+      </div>
+
+      <div class="f-group">
+        <label>Téléphone</label>
+        <input class="inp" id="editPhone">
+      </div>
+
+      <div class="f-group">
+        <label>Email</label>
+        <input class="inp" id="editEmail">
+      </div>
+    </div>
+
+    <div class="modal-ftr">
+      <button class="btn btn-outline" onclick="closeModal('mEditResp')">Annuler</button>
+      <button class="btn btn-primary" onclick="updateResp()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+<script src="app.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, getDocs, setDoc, deleteDoc, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCi-UTQReIk0l5gA9ayDNgUrEIXWteDPXQ",
+  authDomain: "pfes-5bb45.firebaseapp.com",
+  projectId: "pfes-5bb45",
+  storageBucket: "pfes-5bb45.appspot.com",
+  messagingSenderId: "857843523698",
+  appId: "1:857843523698:web:a8cd7566edb367eee6e2eb"
+};
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+const avCols = ['#6366f1','#8b5cf6','#10b981','#f59e0b','#06b6d4','#ef4444','#ec4899','#14b8a6'];
+let allResp = [];
+let deleteRespId = null;
+
+// ── Load zones for select ──
+async function loadZones() {
+  const snap = await getDocs(collection(db, 'zones'));
+  const sel = document.getElementById('rZone');
+  sel.innerHTML = '<option value="">— Choisir un parking —</option>';
+  snap.forEach(d => {
+    const z = d.data();
+    const opt = document.createElement('option');
+    opt.value = d.id;
+    // Montrer si le parking a déjà un agent
+    const hasAgent = z.agentId ? ' ⚠️ (agent assigné)' : '';
+    opt.textContent = (z.name || z.nom || d.id) + hasAgent;
+    if (z.agentId) opt.style.color = 'var(--muted)';
+    sel.appendChild(opt);
+  });
+}
+
+// ── Load agents ──
+async function loadResp() {
+  try {
+    const snap = await getDocs(collection(db, 'admins'));
+    allResp = [];
+    const now = new Date();
+    let thisMonth = 0;
+    snap.forEach(d => {
+      const r = d.data();
+      if (r.role === 'agent' || r.role === 'responsable') {
+        allResp.push({ id: d.id, ...r });
+        if (r.createdAt) {
+          const date = new Date(r.createdAt.seconds * 1000);
+          if (date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()) thisMonth++;
+        }
+      }
+    });
+    const assigned = allResp.filter(r => r.zone).length;
+    document.getElementById('respTotal').textContent      = allResp.length;
+    document.getElementById('respAssigned').textContent   = assigned;
+    document.getElementById('respUnassigned').textContent = allResp.length - assigned;
+    document.getElementById('respThisMonth').textContent  = thisMonth;
+    renderRespCards(allResp);
+    renderRespTable(allResp);
+  } catch(e) { console.error(e); }
+}
+
+function renderRespCards(data) {
+  const grid = document.getElementById('respGrid');
+  if (data.length === 0) {
+    grid.innerHTML = `<div class="empty-state"><div class="ei">🛡️</div><div>Aucun agent enregistré</div></div>`;
+    return;
+  }
+  grid.innerHTML = data.map((r, i) => {
+    const name = r.name || r.nom || '—';
+    const date = r.createdAt ? new Date(r.createdAt.seconds * 1000).toLocaleDateString('fr-FR') : '—';
+    const parkingBadge = r.zoneName
+      ? `<span class="parking-badge">🅿️ ${r.zoneName}</span>`
+      : `<span class="no-parking-badge">⚠️ Sans parking</span>`;
+    return `<div class="resp-card">
+      <div class="rc-head">
+        <div class="rc-av" style="background:${avCols[i%avCols.length]}">${name.charAt(0).toUpperCase()}</div>
+        <div>
+          <div class="rc-name">${name}</div>
+          <div class="rc-role">Agent de parking</div>
+          ${parkingBadge}
+        </div>
+      </div>
+      <div class="rc-info">
+        <strong style="color:var(--muted)">📞 </strong>${r.phone || r.telephone || '—'}<br>
+        <strong style="color:var(--muted)">📧 </strong><span style="font-size:10px">${r.email || '—'}</span><br>
+        <strong style="color:var(--muted)">📅 </strong>${date}
+      </div>
+      <div class="rc-actions">
+  <button class="btn btn-primary btn-sm" onclick="window._editResp('${r.id}')">✏️ Modifier</button>
+  <button class="btn btn-danger btn-sm" onclick="window._delResp('${r.id}','${name}')">🗑</button>
+</div>
+    </div>`;
+  }).join('');
+}
+
+function renderRespTable(data) {
+  if (data.length === 0) {
+    document.getElementById('tRBody').innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">Aucun agent</td></tr>`;
+    return;
+  }
+  document.getElementById('tRBody').innerHTML = data.map((r, i) => {
+    const name = r.name || r.nom || '—';
+    const date = r.createdAt ? new Date(r.createdAt.seconds*1000).toLocaleDateString('fr-FR') : '—';
+    const parkingCell = r.zoneName
+      ? `<span class="badge b-green">🅿️ ${r.zoneName}</span>`
+      : `<span class="badge b-red">⚠️ Non assigné</span>`;
+    return `<tr>
+      <td><div class="name-cell">
+        <div class="av" style="background:${avCols[i%avCols.length]}">${name.charAt(0).toUpperCase()}</div>${name}
+      </div></td>
+      <td style="font-size:11px;color:var(--muted)">${r.email || '—'}</td>
+      <td>${r.phone || r.telephone || '—'}</td>
+      <td>${parkingCell}</td>
+      <td style="color:var(--muted);font-size:11px">${date}</td>
+      <td>
+  <button class="btn btn-primary btn-sm" onclick="window._editResp('${r.id}')">✏️</button>
+  <button class="btn btn-danger btn-sm" onclick="window._delResp('${r.id}','${name}')">✕</button>
+</td>
+    </tr>`;
+  }).join('');
+}
+
+window.searchResp = function(val) {
+  const q = val.toLowerCase();
+  const f = allResp.filter(r =>
+    (r.name||r.nom||'').toLowerCase().includes(q) ||
+    (r.email||'').toLowerCase().includes(q) ||
+    (r.zoneName||r.zone||'').toLowerCase().includes(q));
+  renderRespCards(f); renderRespTable(f);
+};
+
+window.saveResp = async function() {
+  const nom      = document.getElementById('rNom').value.trim();
+  const phone    = document.getElementById('rPhone').value.trim();
+  const email    = document.getElementById('rEmail').value.trim();
+  const password = document.getElementById('rPassword').value;
+  const zoneId   = null;
+  const zoneName = null;
+  const errEl    = document.getElementById('rError');
+  errEl.style.display = 'none';
+
+  if (!nom)             { errEl.style.display='block'; errEl.textContent='⚠️ Le nom est obligatoire.'; return; }
+  if (!email)           { errEl.style.display='block'; errEl.textContent='⚠️ L\'email est obligatoire.'; return; }
+  if (password.length < 6) { errEl.style.display='block'; errEl.textContent='⚠️ Mot de passe minimum 6 caractères.'; return; }
+
+
+  const btn = document.getElementById('btnSaveResp');
+  const txt = document.getElementById('btnSaveRespTxt');
+  btn.disabled = true; txt.textContent = 'Création...';
+
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    const uid  = cred.user.uid;
+
+    await setDoc(doc(db, 'admins', uid), {
+      uid, name: nom, nom, email,
+      phone, telephone: phone,
+      role: 'agent',
+      createdAt: serverTimestamp(),
+    });
+
+    closeModal('mAddResp');
+    toast('✅ Agent créé et assigné au parking !', 'success');
+    ['rNom','rPhone','rEmail','rPassword'].forEach(id => document.getElementById(id).value = '');
+    loadResp();
+  } catch(e) {
+    errEl.style.display = 'block';
+    errEl.textContent = e.code === 'auth/email-already-in-use'
+      ? '⚠️ Cet email est déjà utilisé.'
+      : '⚠️ Erreur: ' + e.message;
+  } finally {
+    btn.disabled = false; txt.textContent = 'Créer le compte';
+  }
+};
+
+window._delResp = function(id, name) {
+  deleteRespId = id;
+  document.getElementById('delRespName').textContent = name;
+  openModal('mDelResp');
+};
+
+window.confirmDeleteResp = async function() {
+  if (!deleteRespId) return;
+  try {
+  const agent = allResp.find(r => r.id === deleteRespId);
+
+    // 🔥 إذا عنده zone → نسكّروها
+    if (agent?.zone) {
+      await updateDoc(doc(db, 'zones', agent.zone), {
+        agentId: null,
+        agentName: null,
+        isOpen: false,
+        status: 'inactive',
+      });
+    }
+
+    await deleteDoc(doc(db, 'admins', deleteRespId));
+    closeModal('mDelResp');
+    toast('Agent supprimé', 'danger');
+    loadResp();
+  } catch(e) { toast('Erreur: ' + e.message, 'danger'); }
+  deleteRespId = null;
+};
+
+let assignAgentId = null;
+
+window._assignParking = async function(agentId, agentName) {
+  assignAgentId = agentId;
+  document.getElementById('assignAgentName').textContent = agentName;
+
+  // نحمّل الـ zones
+  const snap = await getDocs(collection(db, 'zones'));
+  const sel = document.getElementById('assignZoneSelect');
+  sel.innerHTML = '<option value="">— Choisir un parking —</option>';
+  snap.forEach(d => {
+    const z = d.data();
+    const opt = document.createElement('option');
+    opt.value = d.id;
+    const hasAgent = z.agentId && z.agentId !== agentId ? ' ⚠️ (autre agent)' : '';
+    opt.textContent = (z.name || z.nom || d.id) + hasAgent;
+    sel.appendChild(opt);
+  });
+  openModal('mAssignParking');
+};
+
+window.confirmAssignParking = async function() {
+  const zoneEl   = document.getElementById('assignZoneSelect');
+  const zoneId   = zoneEl.value;
+  const zoneName = zoneEl.options[zoneEl.selectedIndex]?.text?.replace(' ⚠️ (autre agent)','').trim() || '';
+  if (!zoneId || !assignAgentId) return;
+
+  try {
+  // 🔥 نحلو الـ bug: إذا الزون فيها agent آخر → نحرّروه
+    const zoneSnap = await getDocs(collection(db, 'zones'));
+    zoneSnap.forEach(async d => {
+      if (d.id === zoneId && d.data().agentId && d.data().agentId !== assignAgentId) {
+        await updateDoc(doc(db, 'admins', d.data().agentId), {
+          zone: null,
+          zoneName: null,
+        });
+      }
+    });
+
+    // Trouver l'agent
+    const agentSnap = await getDocs(collection(db, 'admins'));
+    let agentName = '';
+    agentSnap.forEach(d => { if (d.id === assignAgentId) agentName = d.data().name || d.data().nom || ''; });
+
+    // Mettre à jour l'agent
+    await updateDoc(doc(db, 'admins', assignAgentId), { zone: zoneId, zoneName });
+
+    // Mettre à jour le parking
+    await updateDoc(doc(db, 'zones', zoneId), {
+      agentId: assignAgentId,
+      agentName,
+      isOpen: true,
+      status: 'active',
+    });
+
+    closeModal('mAssignParking');
+    toast("✅ Parking assigné à l'agent !", 'success');
+    loadResp();
+  } catch(e) {
+    toast('Erreur: ' + e.message, 'danger');
+  }
+};
+
+buildLayout('Gestion Agents', 'agent');
+loadZones();
+loadResp();
+</script>
+</body>
+</html>

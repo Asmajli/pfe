@@ -7,7 +7,7 @@ import '../services/firebase_service.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/client/client_screens.dart';
-import '../screens/responsable/resp_screens.dart';
+import '../screens/agent/agent_screens.dart'; // ← nouveau fichier
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final userAsync = ref.watch(currentUserProvider);
@@ -26,12 +26,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final loading = userAsync.isLoading;
       final onAuth  = state.matchedLocation == '/login' ||
           state.matchedLocation == '/register';
-
       if (loading) return null;
       if (user == null && !onAuth) return '/login';
       if (user != null && onAuth) {
-        return user.role == UserRole.responsable
-            ? '/resp/dashboard'
+        // agent → /agent/scan, client → /client/home
+        return user.role == UserRole.agent
+            ? '/agent/scan'
             : '/client/home';
       }
       return null;
@@ -39,11 +39,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
     routes: [
 
-      /// ───────── AUTH ─────────
+      // ── AUTH ─────────────────────────────────────
       GoRoute(path: '/login',    builder: (_, __) => const LoginScreen()),
       GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
 
-      /// ───────── CLIENT ─────────
+      // ══ CLIENT — 3 tabs ══════════════════════════
       StatefulShellRoute.indexedStack(
         builder: (_, __, shell) => ClientShell(shell: shell),
         branches: [
@@ -54,27 +54,29 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               routes: [
                 GoRoute(
                   path: 'booking/:zoneId',
-                  builder: (_, s) => BookingScreen(zoneId: s.pathParameters['zoneId']!),
+                  builder: (_, s) =>
+                      BookingScreen(zoneId: s.pathParameters['zoneId']!),
                 ),
               ],
             ),
           ]),
           StatefulShellBranch(routes: [
-            GoRoute(path: '/client/reservations', builder: (_, __) => const ReservationsScreen()),
+            GoRoute(
+              path: '/client/reservations',
+              builder: (_, __) => const ReservationsScreen(),
+            ),
           ]),
           StatefulShellBranch(routes: [
-            GoRoute(path: '/client/profile', builder: (_, __) => const ClientProfileScreen()),
+            GoRoute(
+              path: '/client/profile',
+              builder: (_, __) => const ClientProfileScreen(),
+            ),
           ]),
         ],
       ),
 
-      // ── Edit Profile (hors shell) ──
-      GoRoute(
-        path: '/client/profile/edit',
-        builder: (_, __) => const EditProfileScreen(),
-      ),
-
-      // ── Avis (hors shell) ──
+      // ── Client routes hors shell ──
+      GoRoute(path: '/client/profile/edit', builder: (_, __) => const EditProfileScreen()),
       GoRoute(
         path: '/client/avis/:zoneId',
         builder: (_, s) => AvisScreen(
@@ -83,62 +85,30 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
-      /// ───────── RESPONSABLE ─────────
+      // ══ AGENT DE PARKING — 3 tabs ════════════════
       StatefulShellRoute.indexedStack(
-        builder: (_, __, shell) => RespShell(shell: shell),
+        builder: (_, __, shell) => AgentShell(shell: shell),
         branches: [
+          // Tab 1 : Scanner (écran principal)
           StatefulShellBranch(routes: [
             GoRoute(
-              path: '/resp/dashboard',
-              builder: (_, __) => const DashboardScreen(),
-              routes: [
-                GoRoute(
-                  path: 'zone/:zoneId',
-                  builder: (_, s) => ZoneDetailScreen(zoneId: s.pathParameters['zoneId']!),
-                  routes: [
-                    // 🗺️ Carte visuelle des places
-                    GoRoute(
-                      path: 'map',
-                      builder: (_, s) => ParkingMapScreen(zoneId: s.pathParameters['zoneId']!),
-                    ),
-                    GoRoute(
-                      path: '3d',
-                      builder: (_, s) => Virtual3DParkingScreen(zoneId: s.pathParameters['zoneId']!),
-                    ),
-                    GoRoute(
-                      path: 'live',
-                      builder: (_, s) => ParkingLiveScreen(zoneId: s.pathParameters['zoneId']!),
-                    ),
-                    // 📋 Liste toutes les réservations
-                    GoRoute(
-                      path: 'reservations',
-                      builder: (_, s) => ZoneReservationsScreen(zoneId: s.pathParameters['zoneId']!),
-                    ),
-                    // 📊 Statistiques zone
-                    GoRoute(
-                      path: 'stats',
-                      builder: (_, s) => ZoneStatsScreen(zoneId: s.pathParameters['zoneId']!),
-                    ),
-                  ],
-                ),
-              ],
+              path: '/agent/scan',
+              builder: (_, __) => const AgentScanScreen(),
             ),
           ]),
+          // Tab 2 : Journal
           StatefulShellBranch(routes: [
             GoRoute(
-              path: '/resp/scanner',
-              builder: (_, __) => const ScannerScreen(),
-              routes: [
-                // 📷 QR Scanner
-                GoRoute(
-                  path: 'qr',
-                  builder: (_, __) => const QRScannerScreen(),
-                ),
-              ],
+              path: '/agent/journal',
+              builder: (_, __) => const AgentJournalScreen(),
             ),
           ]),
+          // Tab 3 : Profil
           StatefulShellBranch(routes: [
-            GoRoute(path: '/resp/profile', builder: (_, __) => const RespProfileScreen()),
+            GoRoute(
+              path: '/agent/profile',
+              builder: (_, __) => const AgentProfileScreen(),
+            ),
           ]),
         ],
       ),
