@@ -110,7 +110,7 @@ class ReminderService {
 
   static const String _appId  = 'bbf1b2c9-e09d-4c2b-839f-3a7e8d0c5337';
   static const String _apiKey =
-      'os_v2_app_xpy3fspatvgcxa47hj7i2dctg5e2y67a32xumcuteqoajmcl5r7mzx6ah5xr67igo7qbm4wwu23q2csqs6r4ana7ty7qifbycmnqlqy';
+      'os_v2_app_xpy3fspatvgcxa47hj7i2dctg6kvdk7y3sxe42mnx3hkgjy3eqeinhoz4r3sl2ircfvhtbrk6cu67ko5vsexx6r2l26ety3wf5wd56i';
 
   void scheduleReminders(Reservation r, String userId) {
     cancelReminders(r.id);
@@ -126,6 +126,16 @@ class ReminderService {
       start.subtract(const Duration(minutes: 15)), now, () => _push(userId,
         '🅿️ Parking bientôt',
         'Votre réservation à ${r.zoneName} commence dans 15 min — Place ${r.spotNumber}'));
+
+    _addTimer(timers,
+      start.subtract(const Duration(minutes: 10)), now, () => _push(userId,
+        '🅿️ Parking bientôt',
+        'Votre réservation à ${r.zoneName} commence dans 10 min — Place ${r.spotNumber}'));
+    _addTimer(timers,
+    
+      start.subtract(const Duration(minutes: 7)), now, () => _push(userId,
+        '🅿️ Parking bientôt',
+        'Votre réservation à ${r.zoneName} commence dans 10 min — Place ${r.spotNumber}'));
 
     // ── 5 min avant DÉBUT ──────────────────────────────
     _addTimer(timers,
