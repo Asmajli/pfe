@@ -48,6 +48,9 @@ void main() async {
   OneSignal.User.addObserver((state) {
   debugPrint('✅ OneSignal externalId: ${state.current.externalId}');
 });
+OneSignal.Notifications.addForegroundWillDisplayListener((event) {
+  event.notification.display(); // 
+});
   await initializeDateFormatting('fr_FR');
   timeago.setLocaleMessages('fr', timeago.FrMessages());
 
@@ -76,10 +79,9 @@ class _ParkAppState extends ConsumerState<ParkApp> {
           _linkedUserId = user.uid;
           // ── ربط OneSignal بـ userId ──────────────────
           OneSignal.login(user.uid).then((_) {
-  debugPrint('✅ OneSignal login: ${user.uid}');
-  debugPrint('✅ OneSignal pushToken: ${OneSignal.User.pushSubscription.token}');
-  
-});
+          debugPrint('✅ OneSignal login: ${user.uid}');
+          debugPrint('✅ OneSignal pushToken: ${OneSignal.User.pushSubscription.token}');
+          });
         } else if (user == null && _linkedUserId != null) {
           _linkedUserId = null;
           // OneSignal.logout();

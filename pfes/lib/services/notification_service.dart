@@ -12,7 +12,7 @@ class AutoSyncService {
 
   static const String _appId  = 'bbf1b2c9-e09d-4c2b-839f-3a7e8d0c5337';
   static const String _apiKey =
-      'os_v2_app_xpy3fspatvgcxa47hj7i2dctg774dndvxkfuanvsbrhjhb3ac6fkjnnjhpync4adotwvc34w7r6bkmmka2fwiwlqtgldrg5rs2qk2ry';
+      'os_v2_app_xpy3fspatvgcxa47hj7i2dctg7jphcwfduzuqh47jzybxtatr3buf7zremur7mhve644qqcruktxhe27se3tftuia35kdxqzb7nvs3y';
 
   Future<void> syncAndNotify(String userId) async {
     final now  = DateTime.now();
@@ -110,7 +110,7 @@ class ReminderService {
 
   static const String _appId  = 'bbf1b2c9-e09d-4c2b-839f-3a7e8d0c5337';
   static const String _apiKey =
-      'os_v2_app_xpy3fspatvgcxa47hj7i2dctg6kvdk7y3sxe42mnx3hkgjy3eqeinhoz4r3sl2ircfvhtbrk6cu67ko5vsexx6r2l26ety3wf5wd56i';
+      'os_v2_app_xpy3fspatvgcxa47hj7i2dctg7jphcwfduzuqh47jzybxtatr3buf7zremur7mhve644qqcruktxhe27se3tftuia35kdxqzb7nvs3y';
 
   void scheduleReminders(Reservation r, String userId) {
     cancelReminders(r.id);
