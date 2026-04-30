@@ -67,11 +67,10 @@
           <label class="f-label">Nom complet</label>
           <input class="inp f-input" id="rNom" placeholder="Ex: Ali Ben Salem">
         </div>
-        <div class="f-group">
-          <label class="f-label">Téléphone</label>
-          <input class="inp f-input" id="rPhone" placeholder="+216 XX XXX XXX">
-        </div>
-      </div>
+       <div class="f-group">
+          <label class="f-label">Téléphone <span style="font-size:10px;color:var(--muted)">(8 chiffres)</span></label>
+          <input class="inp f-input" id="rPhone" placeholder="XX XXX XXX" maxlength="8" type="tel" oninput="this.value=this.value.replace(/\D/g,'').slice(0,8)">
+       </div>
       <div class="f-row">
         <div class="f-group">
           <label class="f-label">Email</label>
@@ -153,8 +152,8 @@
       </div>
 
       <div class="f-group">
-        <label>Téléphone</label>
-        <input class="inp" id="editPhone">
+        <label>Téléphone <span style="font-size:10px;color:var(--muted)">(8 chiffres)</span></label>
+        <input class="inp" id="editPhone" placeholder="XX XXX XXX" maxlength="8" type="tel" oninput="this.value=this.value.replace(/\D/g,'').slice(0,8)">
       </div>
 
       <div class="f-group">
@@ -440,7 +439,29 @@ window.confirmAssignParking = async function() {
     toast('Erreur: ' + e.message, 'danger');
   }
 };
+window._editResp = function(id) {
+  const r = allResp.find(r => r.id === id);
+  if (!r) return;
+  document.getElementById('editRespId').value = id;
+  document.getElementById('editNom').value   = r.name || r.nom || '';
+  document.getElementById('editPhone').value = r.phone || r.telephone || '';
+  document.getElementById('editEmail').value = r.email || '';
+  openModal('mEditResp');
+};
 
+window.updateResp = async function() {
+  const id    = document.getElementById('editRespId').value;
+  const nom   = document.getElementById('editNom').value.trim();
+  const phone = document.getElementById('editPhone').value.trim();
+  const email = document.getElementById('editEmail').value.trim();
+  if (!nom) { toast('Le nom est obligatoire', 'danger'); return; }
+  try {
+    await updateDoc(doc(db, 'admins', id), { name: nom, nom, phone, telephone: phone, email });
+    closeModal('mEditResp');
+    toast('✅ Agent modifié !', 'success');
+    loadResp();
+  } catch(e) { toast('Erreur: ' + e.message, 'danger'); }
+};
 buildLayout('Gestion Agents', 'agent');
 loadZones();
 loadResp();

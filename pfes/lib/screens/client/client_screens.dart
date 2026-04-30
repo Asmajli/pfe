@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,7 +18,6 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../models/models.dart';
 import '../../services/firebase_service.dart';
-import '../../services/notification_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 
@@ -112,8 +111,9 @@ class _HomeState extends ConsumerState<HomeScreen> {
   }
 
   void _goToUser() {
-    if (_userLat != null && _userLng != null)
+    if (_userLat != null && _userLng != null) {
       _mapCtrl.move(ll.LatLng(_userLat!, _userLng!), 15);
+    }
   }
 
   // ── Search ──────────────────────────────────────────
@@ -192,11 +192,13 @@ class _HomeState extends ConsumerState<HomeScreen> {
             isZone: true, zone: z);
       }).toList();
 
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _suggestions = [...zoneResults, ...locationResults.cast<_SearchResult>()];
         _showSuggestions = _suggestions.isNotEmpty;
         _searching = false;
       });
+      }
 
     } catch (_) {
       final zoneResults = matchedZones.map((z) {
@@ -204,11 +206,13 @@ class _HomeState extends ConsumerState<HomeScreen> {
         return _SearchResult(z.id, z.name, latLng.latitude, latLng.longitude,
             isZone: true, zone: z);
       }).toList();
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _suggestions = zoneResults;
         _showSuggestions = zoneResults.isNotEmpty;
         _searching = false;
       });
+      }
     }
   }
 
@@ -293,8 +297,9 @@ class _HomeState extends ConsumerState<HomeScreen> {
   }
 
   ll.LatLng _zoneLatLng(ParkingZone z) {
-    if (z.latitude != null && z.longitude != null)
+    if (z.latitude != null && z.longitude != null) {
       return ll.LatLng(z.latitude!, z.longitude!);
+    }
     const fallbacks = [
       (34.7406, 10.7603), (34.7450, 10.7650), (34.7380, 10.7560),
       (34.7470, 10.7580), (34.7360, 10.7630),
@@ -326,7 +331,7 @@ class _HomeState extends ConsumerState<HomeScreen> {
         FlutterMap(
           mapController: _mapCtrl,
           options: MapOptions(
-            initialCenter: ll.LatLng(_defLat, _defLng),
+            initialCenter: const ll.LatLng(_defLat, _defLng),
             initialZoom: 13,
             backgroundColor: const Color(0xFF0d1220),
             onTap: (_, __) {
@@ -365,7 +370,7 @@ class _HomeState extends ConsumerState<HomeScreen> {
                       decoration: BoxDecoration(color: color, shape: BoxShape.circle,
                         border: Border.all(color: Colors.white, width: 2),
                         boxShadow: [BoxShadow(color: color.withOpacity(0.5), blurRadius: 8)]),
-                      child: const Center(child: Text('🅿️', style: TextStyle(fontSize: 17)))),
+                      child: const Center(child: Text('P', style: TextStyle(fontSize: 17)))),
                     Container(width: 2, height: 8, color: color),
                   ]),
                 ),
@@ -453,11 +458,11 @@ class _HomeState extends ConsumerState<HomeScreen> {
               color: AppColors.surface.withOpacity(0.93),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppColors.border)),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               _Legend(color: AppColors.green, label: 'Disponible'),
-              const SizedBox(height: 4),
+              SizedBox(height: 4),
               _Legend(color: AppColors.yellow, label: '≤ 5 places'),
-              const SizedBox(height: 4),
+              SizedBox(height: 4),
               _Legend(color: AppColors.red, label: 'Complet'),
             ]),
           ),
@@ -611,12 +616,16 @@ class _ZoneDetailCard extends ConsumerWidget {
       ParkButton(
         label: zone.isFull ? 'Zone complète' : 'Réserver une place',
         icon: zone.isFull ? Icons.block : Icons.check_circle_outline,
-        onTap: zone.isOpen && !zone.isFull ? () => context.push('/client/home/booking/${zone.id}') : null,
+        onTap: zone.isOpen &&
+       !zone.isFull &&
+       (zone.agentId != null && zone.agentId!.isNotEmpty)
+    ? () => context.push('/client/home/booking/${zone.id}')
+    : null,
         colors: zone.isFull ? [AppColors.textMuted, AppColors.textMuted] : [AppColors.blue, AppColors.cyan],
       ),
     ]);
   }
-  String _icon(String t) => {'vip':'⭐','couvert':'🏗️','souterrain':'🔽','pmr':'♿'}[t] ?? '🅿️';
+  String _icon(String t) => {'vip':'','couvert':'','souterrain':'','pmr':''}[t] ?? 'P';
 }
 
 // ══════════════════════════════════════════════════════
@@ -631,9 +640,11 @@ class _ZoneList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (zones.isEmpty) return const Center(child: Padding(
+    if (zones.isEmpty) {
+      return const Center(child: Padding(
       padding: EdgeInsets.all(20),
       child: Text('Aucun parking enregistré', style: TextStyle(color: AppColors.textMuted))));
+    }
     return ListView.separated(
       controller: scrollCtrl,
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -690,7 +701,7 @@ class _ZoneRow extends StatelessWidget {
       ]),
     ));
   }
-  String _icon(String t) => {'vip':'⭐','couvert':'🏗️','souterrain':'🔽','pmr':'♿'}[t] ?? '🅿️';
+  String _icon(String t) => {'vip':'','couvert':'','souterrain':'','pmr':''}[t] ?? 'P';
 }
 
 // ── Utilities ──────────────────────────────────────────
@@ -790,12 +801,11 @@ class _BookState extends ConsumerState<BookingScreen> {
   double _selectedSpotPrice = 2.5;
 
   static const List<Map<String, dynamic>> _spotTypes = [
-    {'icon': '🚗', 'label': 'Standard', 'price': 2.5,  'colorVal': 0xFF6366f1},
-    {'icon': '⭐', 'label': 'VIP',      'price': 4.0,  'colorVal': 0xFFf59e0b},
-    {'icon': '♿', 'label': 'PMR',       'price': 1.0,  'colorVal': 0xFF22c55e},
-    {'icon': '🏍', 'label': 'Moto',     'price': 1.5,  'colorVal': 0xFF8b5cf6},
-  ];
-
+  {'iconData': Icons.directions_car, 'label': 'Standard', 'price': 2.5, 'colorVal': 0xFF6366f1},
+  {'iconData': Icons.star,           'label': 'VIP',      'price': 4.0, 'colorVal': 0xFFf59e0b},
+  {'iconData': Icons.accessible,     'label': 'PMR',      'price': 1.0, 'colorVal': 0xFF22c55e},
+  {'iconData': Icons.two_wheeler,    'label': 'Moto',     'price': 1.5, 'colorVal': 0xFF8b5cf6},
+];
   String _formatDuration(Duration d) {
     if (d.isNegative || d.inMinutes == 0) return '—';
     final h = d.inHours; final m = d.inMinutes % 60;
@@ -804,28 +814,28 @@ class _BookState extends ConsumerState<BookingScreen> {
     return '${h}h ${m}min';
   }
 
-  // ── Vérifie dispo avant d'afficher le dialog paiement ──
+  // ── Vérifie dispo avant d'afficher le dialog paiement 
   Future<void> _book(AppUser user, ParkingZone zone) async {
     setState(() => _loading = true);
 
-    // ── 0. Vérifier que le créneau est valide ──
+    //  0. Vérifier que le créneau est valide 
     final now = DateTime.now();
     if (_start.isBefore(now)) {
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('⚠️ Impossible de réserver dans le passé'),
+        content: Text('Impossible de réserver dans le passé'),
         backgroundColor: Colors.orange));
       return;
     }
     if (_end.isBefore(_start) || _end.difference(_start).inMinutes < 15) {
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('⚠️ La durée minimum est 15 minutes'),
+        content: Text('La durée minimum est 15 minutes'),
         backgroundColor: Colors.orange));
       return;
     }
 
-    // ── 1. Vérifier conflit client ──
+    //  1. Vérifier conflit client 
     try {
       final clientConflict = await ref.read(parkingServiceProvider)
           .hasClientConflict(userId: user.uid, start: _start, end: _end);
@@ -833,21 +843,21 @@ class _BookState extends ConsumerState<BookingScreen> {
         if (!mounted) return;
         setState(() => _loading = false);
         _showConflictDialog(
-          '⚠️ Conflit de réservation',
+          'Conflit de réservation',
           'Vous avez deja une reservation active sur ce creneau. Choisissez un autre horaire.',
           isWarning: true,
         );
         return;
       }
 
-      // ── 2. Vérifier dispo zone ──
+      //  2. Vérifier dispo zone 
       final occupied = await ref.read(parkingServiceProvider)
           .countOverlappingReservations(zoneId: zone.id, start: _start, end: _end);
       if (occupied >= zone.totalSpots) {
         if (!mounted) return;
         setState(() => _loading = false);
         _showConflictDialog(
-          '🅿️ Zone complète',
+          'Zone complète',
           'Toutes les ${zone.totalSpots} places sont reservees sur ce creneau. Essayez un autre horaire.',
           isWarning: false,
         );
@@ -899,7 +909,7 @@ class _BookState extends ConsumerState<BookingScreen> {
               const SizedBox(width: 12),
               Expanded(child: GestureDetector(onTap: () => Navigator.pop(_, true),
                 child: Container(padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(gradient: LinearGradient(colors: [AppColors.blue, AppColors.cyan]), borderRadius: BorderRadius.circular(12)),
+                  decoration: BoxDecoration(gradient: const LinearGradient(colors: [AppColors.blue, AppColors.cyan]), borderRadius: BorderRadius.circular(12)),
                   child: const Center(child: Text('Payer', style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white)))))),
             ]),
           ])),
@@ -911,11 +921,12 @@ class _BookState extends ConsumerState<BookingScreen> {
       final resv = await ref.read(parkingServiceProvider).createReservation(
         user: user, zone: zone, start: _start, end: _end, spot: spot, totalAmount: total);
       ref.read(reminderServiceProvider).scheduleReminders(resv, user.uid);
+      ref.invalidate(zonesProvider);
       if (!mounted) return;
       _showSuccessSheet(zone, total, spot, resv.id);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(' $e')));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -977,7 +988,7 @@ class _BookState extends ConsumerState<BookingScreen> {
             const SizedBox(width: 12),
             const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('Réservation confirmée !', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-              Text('Paiement effectué ✅', style: TextStyle(fontSize: 12, color: AppColors.green)),
+              Text('Paiement effectué', style: TextStyle(fontSize: 12, color: AppColors.green)),
             ]),
           ]),
           const SizedBox(height: 20),
@@ -1039,7 +1050,7 @@ class _BookState extends ConsumerState<BookingScreen> {
         if (zone != null && zone.id.isNotEmpty) ...[
           ParkCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              Text(_typeIcon(zone.type), style: const TextStyle(fontSize: 28)),
+              Icon(_typeIcon(zone.type), size: 28),
               const SizedBox(width: 12),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(zone.name, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
@@ -1050,6 +1061,7 @@ class _BookState extends ConsumerState<BookingScreen> {
             OccBar(value: zone.rate),
             const SizedBox(height: 8),
             Row(children: [
+              
               StatusBadge(label: zone.isFull ? 'Complet' : '${zone.freeSpots} places libres',
                   color: zone.isFull ? AppColors.red : AppColors.green),
               const Spacer(),
@@ -1075,7 +1087,11 @@ class _BookState extends ConsumerState<BookingScreen> {
                     border: Border.all(color: isSelected ? color : color.withOpacity(0.25), width: isSelected ? 2 : 1),
                     boxShadow: isSelected ? [BoxShadow(color: color.withOpacity(0.3), blurRadius: 8)] : []),
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    Text(t['icon'] as String, style: const TextStyle(fontSize: 22)),
+                    Icon(
+                      t['iconData'] as IconData,
+                      size: 26,
+                      color: color,
+                    ),
                     const SizedBox(height: 4),
                     Text(t['label'] as String, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
                         color: isSelected ? color : AppColors.textPri)),
@@ -1098,8 +1114,10 @@ class _BookState extends ConsumerState<BookingScreen> {
                   final picked = await showDateTimePicker(context, _start);
                   if (picked != null) {
                     if (picked.isBefore(DateTime.now())) {
-                      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('⚠️ Impossible de choisir une heure dans le passé'), backgroundColor: Colors.orange));
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Impossible de choisir une heure dans le passé'), backgroundColor: Colors.orange));
+                      }
                       return;
                     }
                     setState(() { _start = picked; if (_end.isBefore(_start)) _end = _start.add(const Duration(hours: 1)); });
@@ -1128,8 +1146,10 @@ class _BookState extends ConsumerState<BookingScreen> {
                   final picked = await showDateTimePicker(context, _end);
                   if (picked != null) {
                     if (picked.isBefore(_start)) {
-                      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('⚠️ La fin doit être après le début'), backgroundColor: Colors.orange));
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('La fin doit être après le début'), backgroundColor: Colors.orange));
+                      }
                       return;
                     }
                     setState(() => _end = picked);
@@ -1171,16 +1191,21 @@ class _BookState extends ConsumerState<BookingScreen> {
           const SizedBox(height: 24),
           userAsync.when(
             data: (user) => zone.isFull
-                ? const Center(child: Text('⚠️ Zone complète', style: TextStyle(color: AppColors.red)))
+                ? const Center(child: Text(' Zone complète', style: TextStyle(color: AppColors.red)))
                 : ParkButton(label: 'Payer ${total.toStringAsFixed(1)} DT', icon: Icons.credit_card_outlined,
-                    loading: _loading, onTap: user != null ? () => _book(user, zone!) : null,
-                    colors: [AppColors.blue, AppColors.cyan]),
+                    loading: _loading, onTap: user != null ? () => _book(user, zone) : null,
+                    colors: const [AppColors.blue, AppColors.cyan]),
             loading: () => const SizedBox(), error: (_, __) => const SizedBox()),
         ],
       ])),
     );
   }
-  String _typeIcon(String t) => {'vip':'⭐','couvert':'🏗️','souterrain':'🔽','pmr':'♿'}[t] ?? '🅿️';
+  IconData _typeIcon(String t) => {
+  'vip': Icons.star,
+  'couvert': Icons.local_parking,
+  'souterrain': Icons.directions_car,
+  'pmr': Icons.accessible,
+}[t] ?? Icons.local_parking;
 }
 
 // ══════════════════════════════════════════════════════
@@ -1234,19 +1259,19 @@ class _ReservationsScreenState extends ConsumerState<ReservationsScreen> {
       final notifKey5  = '${r.id}_5';
       final notifKey15 = '${r.id}_15';
 
-      // ── Banner 15 min ──
+      //  Banner 15 min 
       if (remaining <= 15 && remaining > 5 && !_notifiedIds.contains(notifKey15)) {
         _notifiedIds.add(notifKey15);
         _showBanner(
-          '⏰  ${r.zoneName} — Place ${r.spotNumber} expire dans $remaining min',
+          '  ${r.zoneName} — Place ${r.spotNumber} expire dans $remaining min',
           AppColors.yellow,
         );
       }
-      // ── Banner 5 min ──
+      //  Banner 5 min 
       if (remaining <= 5 && remaining > 0 && !_notifiedIds.contains(notifKey5)) {
         _notifiedIds.add(notifKey5);
         _showBanner(
-          '🔴  Expiration dans $remaining min — ${r.zoneName} !',
+          '  Expiration dans $remaining min — ${r.zoneName} !',
           AppColors.red,
         );
         _showReminderDialog(r, remaining);
@@ -1266,7 +1291,7 @@ class _ReservationsScreenState extends ConsumerState<ReservationsScreen> {
               border: Border.all(color: AppColors.yellow.withOpacity(0.4))),
             child: const Icon(Icons.timer_outlined, color: AppColors.yellow, size: 30)),
           const SizedBox(height: 16),
-          const Text('⏰ Rappel de réservation', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+          const Text('Rappel de réservation', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
           const SizedBox(height: 8),
           Text('Votre réservation à ${r.zoneName} expire dans $minutes minutes.',
               style: const TextStyle(fontSize: 13, color: AppColors.textMuted), textAlign: TextAlign.center),
@@ -1293,10 +1318,12 @@ class _ReservationsScreenState extends ConsumerState<ReservationsScreen> {
                         vehiclePlate: r.vehiclePlate, startTime: r.startTime, endTime: newEnd,
                         pricePerHour: r.pricePerHour, status: r.status, createdAt: r.createdAt);
                       ref.read(reminderServiceProvider).scheduleReminders(updatedR, r.userId);
-                      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('✅ Prolongé de $label'), backgroundColor: AppColors.green));
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(' Prolongé de $label'), backgroundColor: AppColors.green));
+                      }
                     } catch (e) {
-                      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ $e')));
+                      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(' $e')));
                     }
                   },
                   child: Container(padding: const EdgeInsets.symmetric(vertical: 10),
@@ -1331,7 +1358,7 @@ class _ReservationsScreenState extends ConsumerState<ReservationsScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Mes réservations')),
       body: Column(children: [
-        // ── In-app banner ──────────────────────────────
+        //  In-app banner 
         if (_bannerMsg != null)
           AnimatedContainer(
             duration: const Duration(milliseconds: 300),
@@ -1361,8 +1388,9 @@ class _ReservationsScreenState extends ConsumerState<ReservationsScreen> {
           final resvAsync = ref.watch(userReservationsProvider(user.uid));
           return resvAsync.when(
             data: (list) {
-              if (list.isEmpty) return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                const Text('🅿️', style: TextStyle(fontSize: 48)),
+              if (list.isEmpty) {
+                return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                const Text('P', style: TextStyle(fontSize: 48)),
                 const SizedBox(height: 12),
                 const Text('Aucune réservation', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 6),
@@ -1370,6 +1398,7 @@ class _ReservationsScreenState extends ConsumerState<ReservationsScreen> {
                 const SizedBox(height: 20),
                 ParkButton(label: 'Réserver maintenant', icon: Icons.add, onTap: () => context.go('/client/home'), height: 46),
               ]));
+              }
               return ListView.separated(padding: const EdgeInsets.all(20), itemCount: list.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 12),
                 itemBuilder: (ctx, i) => _ResvCard(r: list[i], ref: ref)
@@ -1437,8 +1466,10 @@ class _ResvCard extends StatelessWidget {
                   ]));
               if (ok == true && context.mounted) {
                 await ref.read(parkingServiceProvider).cancelReservation(r.id);
-                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Réservation annulée')));
+                }
               }
             },
             child: Container(padding: const EdgeInsets.symmetric(vertical: 10),
@@ -1470,7 +1501,7 @@ class _ResvCard extends StatelessWidget {
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               Icon(Icons.qr_code_2, color: (r.exitQrData != null && r.exitQrData!.isNotEmpty) ? AppColors.orange : AppColors.cyan, size: 18),
               const SizedBox(width: 8),
-              Text((r.exitQrData != null && r.exitQrData!.isNotEmpty) ? "QR Sortie 🚪" : "QR Entrée 🅿️",
+              Text((r.exitQrData != null && r.exitQrData!.isNotEmpty) ? "QR Sortie" : "QR Entrée P",
                 style: TextStyle(color: (r.exitQrData != null && r.exitQrData!.isNotEmpty) ? AppColors.orange : AppColors.cyan, fontSize: 13, fontWeight: FontWeight.w600)),
             ]))),
       ],
@@ -1497,7 +1528,7 @@ class _ResvCard extends StatelessWidget {
       builder: (dialogContext) => StatefulBuilder(builder: (ctx, setS) => AlertDialog(
         backgroundColor: AppColors.card,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('⏱ Prolonger la réservation'),
+        title: const Text('Prolonger la réservation'),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           Text('Place ${r.spotNumber} · ${r.zoneName}', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
           const SizedBox(height: 20),
@@ -1535,11 +1566,13 @@ class _ResvCard extends StatelessWidget {
                   vehiclePlate: r.vehiclePlate, startTime: r.startTime, endTime: newEnd,
                   pricePerHour: r.pricePerHour, status: r.status, createdAt: r.createdAt);
                 ref.read(reminderServiceProvider).scheduleReminders(updatedR, r.userId);
-                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('✅ Prolongé de ${selectedMinutes < 60 ? "$selectedMinutes min" : "${selectedMinutes~/60}h"}'),
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(' Prolongé de ${selectedMinutes < 60 ? "$selectedMinutes min" : "${selectedMinutes~/60}h"}'),
                       backgroundColor: AppColors.green));
+                }
               } catch (e) {
-                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ $e')));
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(' $e')));
               }
             },
             child: const Text('Confirmer', style: TextStyle(color: AppColors.blue2, fontWeight: FontWeight.w700))),
@@ -1613,22 +1646,11 @@ class ClientProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final userAsync = ref.watch(currentUserProvider);
     return Scaffold(
-      appBar: AppBar(
-  title: const Text('Mon profil'),
-  actions: [
-    TextButton.icon(
-      onPressed: () => context.push('/client/profile/edit'),
-      style: TextButton.styleFrom(
-        foregroundColor: AppColors.textSec, // 👈 اللون الجديد
-      ),
-      icon: const Icon(Icons.edit_outlined, size: 16),
-      label: const Text(
-        'Modifier',
-        style: TextStyle(fontSize: 13),
-      ),
-    )
-  ]
-),
+      appBar: AppBar(title: const Text('Mon profil'),
+        actions: [TextButton.icon(
+          onPressed: () => context.push('/client/profile/edit'),
+          icon: const Icon(Icons.edit_outlined, size: 16, color: AppColors.blue2),
+          label: const Text('Modifier', style: TextStyle(color: AppColors.blue2, fontSize: 13)))]),
       body: userAsync.when(
         data: (user) {
           if (user == null) return const SizedBox();
@@ -1642,7 +1664,7 @@ class ClientProfileScreen extends ConsumerWidget {
                   Text(user.email, style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
                   const SizedBox(height: 6),
                   StatusBadge(
-                    label: user.subscription == 'vip' ? '⭐ VIP' : user.subscription == 'premium' ? '🌟 Premium' : 'Standard',
+                    label: user.subscription == 'vip' ? ' VIP' : user.subscription == 'premium' ? ' Premium' : 'Standard',
                     color: user.subscription == 'vip' ? AppColors.yellow : user.subscription == 'premium' ? AppColors.purple : AppColors.blue2),
                 ])),
               ])),
@@ -1656,7 +1678,7 @@ class ClientProfileScreen extends ConsumerWidget {
               _PRow(Icons.directions_car_outlined, 'Véhicule', user.vehiclePlate?.isNotEmpty == true ? user.vehiclePlate! : '—'),
             ])),
             const SizedBox(height: 20),
-            ParkButton(label: 'Déconnexion', icon: Icons.logout, outlined: true, colors: [AppColors.red],
+            ParkButton(label: 'Déconnexion', icon: Icons.logout, outlined: true, colors: const [AppColors.red],
               onTap: () async {
                 await ref.read(authServiceProvider).logout();
                 if (context.mounted) context.go('/login');
@@ -1724,7 +1746,7 @@ class _EditProfileState extends ConsumerState<EditProfileScreen> {
       final picked = await ImagePicker().pickImage(source: source, imageQuality: 70, maxWidth: 512);
       if (picked != null) setState(() => _pickedImage = picked);
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ $e')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(' $e')));
     }
   }
 
@@ -1756,7 +1778,7 @@ class _EditProfileState extends ConsumerState<EditProfileScreen> {
 
   Future<void> _save() async {
     if (_nameCtrl.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('⚠️ Le nom est obligatoire')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Le nom est obligatoire')));
       return;
     }
     setState(() => _loading = true);
@@ -1779,10 +1801,10 @@ class _EditProfileState extends ConsumerState<EditProfileScreen> {
       await FirebaseFirestore.instance.collection('users').doc(user.uid).update(data);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✅ Profil mis à jour'), backgroundColor: AppColors.green));
+          const SnackBar(content: Text('Profil mis à jour'), backgroundColor: AppColors.green));
       context.pop();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(' $e')));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -1816,12 +1838,16 @@ class _EditProfileState extends ConsumerState<EditProfileScreen> {
         ParkField(label: 'Nom complet', hint: 'Votre nom', controller: _nameCtrl,
             prefix: const Icon(Icons.person_outline, color: AppColors.textMuted, size: 18)),
         const SizedBox(height: 12),
-        ParkField(label: 'Téléphone', hint: '+216 XX XXX XXX', controller: _phoneCtrl,
-            keyboardType: TextInputType.phone,
+        ParkField(label: 'Téléphone', hint: 'XX XXX XXX', controller: _phoneCtrl,
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(8),
+           ],
             prefix: const Icon(Icons.phone_outlined, color: AppColors.textMuted, size: 18)),
-        const SizedBox(height: 24),
-        const Text('VÉHICULE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.textMuted, letterSpacing: 0.8)),
-        const SizedBox(height: 10),
+         const SizedBox(height: 24),
+         const Text('VÉHICULE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.textMuted, letterSpacing: 0.8)),
+         const SizedBox(height: 10),
         ParkField(label: 'Plaque', hint: 'ex: 16-12345-A', controller: _plateCtrl,
             prefix: const Icon(Icons.directions_car_outlined, color: AppColors.textMuted, size: 18)),
         const SizedBox(height: 12),
@@ -1829,7 +1855,7 @@ class _EditProfileState extends ConsumerState<EditProfileScreen> {
             prefix: const Icon(Icons.car_repair, color: AppColors.textMuted, size: 18)),
         const SizedBox(height: 32),
         ParkButton(label: 'Enregistrer les modifications', icon: Icons.check_rounded,
-            loading: _loading, onTap: _save, colors: [AppColors.blue, AppColors.blue2]),
+            loading: _loading, onTap: _save, colors: const [AppColors.blue, AppColors.blue2]),
       ])),
     );
   }
@@ -1844,14 +1870,31 @@ Future<DateTime?> showDateTimePicker(BuildContext context, DateTime init) async 
     context: context,
     initialDate: init.isBefore(now) ? now : init,
     firstDate: now, lastDate: now.add(const Duration(days: 30)),
-    builder: (ctx, child) => Theme(data: ThemeData.dark().copyWith(
-        colorScheme: const ColorScheme.dark(primary: AppColors.blue2, surface: AppColors.card)), child: child!));
+    builder: (ctx, child) => Theme(data: ThemeData.light().copyWith(
+        colorScheme: const ColorScheme.light(
+          primary: AppColors.blue,
+          onPrimary: Colors.white,
+          surface: Colors.white,
+          onSurface: AppColors.textPri,
+        )), child: child!));
   if (date == null) return null;
   final time = await showTimePicker(
     context: context,
     initialTime: TimeOfDay.fromDateTime(init.isBefore(now) ? now : init),
-    builder: (ctx, child) => Theme(data: ThemeData.dark().copyWith(
-        colorScheme: const ColorScheme.dark(primary: AppColors.blue2, surface: AppColors.card)), child: child!));
+    builder: (ctx, child) => MediaQuery(
+      data: MediaQuery.of(ctx).copyWith(alwaysUse24HourFormat: true),
+      child: Theme(
+        data: ThemeData.light().copyWith(
+          colorScheme: const ColorScheme.light(
+            primary: AppColors.blue,
+            onPrimary: Colors.white,
+            surface: Colors.white,
+            onSurface: AppColors.textPri,
+          ),
+        ),
+        child: child!,
+      ),
+    ));
   if (time == null) return null;
   return DateTime(date.year, date.month, date.day, time.hour, time.minute);
 }
@@ -1878,7 +1921,7 @@ class _AvisState extends ConsumerState<AvisScreen> {
   @override void dispose() { _commentCtrl.dispose(); super.dispose(); }
 
   Future<void> _submit() async {
-    if (_rating == 0) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('⚠️ Choisissez une note'))); return; }
+    if (_rating == 0) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Choisissez une note'))); return; }
     setState(() => _loading = true);
     try {
       final user = ref.read(currentUserProvider).asData?.value;
@@ -1889,7 +1932,7 @@ class _AvisState extends ConsumerState<AvisScreen> {
       if (!mounted) return;
       setState(() => _submitted = true);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(' $e')));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -1943,8 +1986,8 @@ class _AvisState extends ConsumerState<AvisScreen> {
     })),
     const SizedBox(height: 8),
     Center(child: Text(
-      _rating == 0 ? 'Appuyez pour noter' : _rating == 1 ? '😞 Très mauvais' : _rating == 2 ? '😕 Mauvais'
-          : _rating == 3 ? '😐 Moyen' : _rating == 4 ? '😊 Bien' : '😍 Excellent !',
+      _rating == 0 ? 'Appuyez pour noter' : _rating == 1 ? 'Très mauvais' : _rating == 2 ? 'Mauvais'
+          : _rating == 3 ? 'Moyen' : _rating == 4 ? 'Bien' : 'Excellent !',
       style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
           color: _rating == 0 ? AppColors.textMuted : _rating <= 2 ? AppColors.red
               : _rating == 3 ? AppColors.yellow : AppColors.green))),
@@ -1959,7 +2002,7 @@ class _AvisState extends ConsumerState<AvisScreen> {
             border: InputBorder.none, contentPadding: EdgeInsets.all(16)))),
     const SizedBox(height: 32),
     ParkButton(label: 'Publier mon avis', icon: Icons.send_rounded, loading: _loading, onTap: _submit,
-        colors: [AppColors.yellow, AppColors.orange]),
+        colors: const [AppColors.yellow, AppColors.orange]),
     const SizedBox(height: 12),
     GestureDetector(onTap: () => context.pop(),
         child: const Center(child: Text('Passer', style: TextStyle(fontSize: 13, color: AppColors.textMuted)))),

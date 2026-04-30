@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; 
 import '../theme/app_theme.dart';
 
 // ── GRADIENT BUTTON ────────────────────────────────────
@@ -106,7 +107,7 @@ class StatusBadge extends StatelessWidget {
         Container(width: 5, height: 5,
             decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         const SizedBox(width: 5),
-        Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textPri,)),
+        Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textPri,)),
       ]),
     );
   }
@@ -223,6 +224,7 @@ class ParkField extends StatelessWidget {
   final int maxLines;
 
   final Function(String)? onChanged; // ✅ الجديد
+  final List<TextInputFormatter>? inputFormatters;
 
   const ParkField({
     super.key,
@@ -237,7 +239,8 @@ class ParkField extends StatelessWidget {
     this.readOnly = false,
     this.onTap,
     this.maxLines = 1,
-    this.onChanged, // ✅ الجديد
+    this.onChanged,
+    this.inputFormatters,
   });
 
   @override
@@ -260,7 +263,8 @@ class ParkField extends StatelessWidget {
           readOnly: readOnly,
           onTap: onTap,
           maxLines: maxLines,
-          onChanged: onChanged, // ✅ أهم سطر
+          onChanged: onChanged, 
+          inputFormatters: inputFormatters,
           style: const TextStyle(
               color: AppColors.textPri, fontSize: 14),
           decoration: InputDecoration(

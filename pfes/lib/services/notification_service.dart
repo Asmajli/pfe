@@ -12,7 +12,7 @@ class AutoSyncService {
 
   static const String _appId  = 'bbf1b2c9-e09d-4c2b-839f-3a7e8d0c5337';
   static const String _apiKey =
-      'os_v2_app_xpy3fspatvgcxa47hj7i2dctg7jphcwfduzuqh47jzybxtatr3buf7zremur7mhve644qqcruktxhe27se3tftuia35kdxqzb7nvs3y';
+      'os_v2_app_xpy3fspatvgcxa47hj7i2dctg6v2qmnd6hbudnupe6albhpkhcuucma4otl3acn5kh4esqsl6dvw7wzpkcskf2fgjnoxlihu5qewfzq';
 
   Future<void> syncAndNotify(String userId) async {
     final now  = DateTime.now();
@@ -64,16 +64,29 @@ class AutoSyncService {
       }
 
       // ── 4. Rappels avant FIN ────────────────────────
-      final diff = endTime.difference(now).inMinutes;
-      if (diff <= 15 && diff > 5) {
-        await _push(userId,
-          '⏰ Rappel parking',
-          'Votre place $spotNumber à $zoneName expire dans $diff min.');
-      } else if (diff <= 5 && diff > 0) {
-        await _push(userId,
-          '🚨 Expiration imminente',
-          'Plus que $diff min — Place $spotNumber à $zoneName !');
-      }
+      final diff = endTime.difference(now).inSeconds;
+
+// ── 15 min reminder ─────────────────────
+if (diff <= 15 && diff > 0 && data['notified_15sec'] != true) {
+  await _push(
+    userId,
+    '⏰ Rappel parking',
+    'Votre place $spotNumber à $zoneName expire dans $diff sec.'
+  );
+
+  await doc.reference.update({'notified_15sec': true});
+}
+
+// ── 5 min reminder ──────────────────────
+if (diff <= 5 && diff > 0 && data['notified_5sec'] != true) {
+  await _push(
+    userId,
+    '🚨 Expiration imminente',
+    'Plus que $diff min — Place $spotNumber à $zoneName !'
+  );
+
+  await doc.reference.update({'notified_5sec': true});
+}
     }
   }
 
@@ -110,7 +123,7 @@ class ReminderService {
 
   static const String _appId  = 'bbf1b2c9-e09d-4c2b-839f-3a7e8d0c5337';
   static const String _apiKey =
-      'os_v2_app_xpy3fspatvgcxa47hj7i2dctg7jphcwfduzuqh47jzybxtatr3buf7zremur7mhve644qqcruktxhe27se3tftuia35kdxqzb7nvs3y';
+      'os_v2_app_xpy3fspatvgcxa47hj7i2dctg6v2qmnd6hbudnupe6albhpkhcuucma4otl3acn5kh4esqsl6dvw7wzpkcskf2fgjnoxlihu5qewfzq';
 
   void scheduleReminders(Reservation r, String userId) {
     cancelReminders(r.id);
@@ -123,29 +136,20 @@ class ReminderService {
 
     // ── 15 min avant DÉBUT ─────────────────────────────
     _addTimer(timers,
-      start.subtract(const Duration(minutes: 15)), now, () => _push(userId,
+      start.subtract(const Duration(seconds: 15)), now, () => _push(userId,
         '🅿️ Parking bientôt',
-        'Votre réservation à ${r.zoneName} commence dans 15 min — Place ${r.spotNumber}'));
+        'Votre réservation à ${r.zoneName} commence dans 15 sec — Place ${r.spotNumber}'));
 
-    _addTimer(timers,
-      start.subtract(const Duration(minutes: 10)), now, () => _push(userId,
-        '🅿️ Parking bientôt',
-        'Votre réservation à ${r.zoneName} commence dans 10 min — Place ${r.spotNumber}'));
-    _addTimer(timers,
-    
-      start.subtract(const Duration(minutes: 7)), now, () => _push(userId,
-        '🅿️ Parking bientôt',
-        'Votre réservation à ${r.zoneName} commence dans 10 min — Place ${r.spotNumber}'));
 
     // ── 5 min avant DÉBUT ──────────────────────────────
     _addTimer(timers,
-      start.subtract(const Duration(minutes: 5)), now, () => _push(userId,
-        '⚡ Parking dans 5 min !',
+      start.subtract(const Duration(seconds: 5)), now, () => _push(userId,
+        '⚡ Parking dans 5 sec !',
         'Rendez-vous à ${r.zoneName} — Place ${r.spotNumber}'));
 
     // ── Auto-annulation +30 min sans entrée ────────────
     _addTimer(timers,
-      start.add(const Duration(minutes: 30)), now, () async {
+      start.add(const Duration(seconds: 30)), now, () async {
         try {
           final doc = await FirebaseFirestore.instance
               .collection('reservations').doc(r.id).get();
@@ -169,15 +173,15 @@ class ReminderService {
 
     // ── 15 min avant FIN ───────────────────────────────
     _addTimer(timers,
-      end.subtract(const Duration(minutes: 15)), now, () => _push(userId,
+      end.subtract(const Duration(seconds: 15)), now, () => _push(userId,
         '⏰ Rappel parking',
-        'Votre place ${r.spotNumber} à ${r.zoneName} expire dans 15 min'));
+        'Votre place ${r.spotNumber} à ${r.zoneName} expire dans 15 sec'));
 
     // ── 5 min avant FIN ────────────────────────────────
     _addTimer(timers,
-      end.subtract(const Duration(minutes: 5)), now, () => _push(userId,
+      end.subtract(const Duration(seconds: 5)), now, () => _push(userId,
         '⚠️ Expiration imminente',
-        'Votre place ${r.spotNumber} à ${r.zoneName} expire dans 5 min !'));
+        'Votre place ${r.spotNumber} à ${r.zoneName} expire dans 5 sec !'));
 
     // ── À l'expiration ─────────────────────────────────
     _addTimer(timers, end, now, () {
@@ -231,7 +235,9 @@ class ReminderService {
 
   void cancelAll() {
     for (final timers in _timers.values) {
-      for (final t in timers) t.cancel();
+      for (final t in timers) {
+        t.cancel();
+      }
     }
     _timers.clear();
   }

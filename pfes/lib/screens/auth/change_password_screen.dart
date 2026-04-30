@@ -175,7 +175,7 @@ class _ChangePasswordState extends ConsumerState<ChangePasswordScreen> {
               icon: Icons.check_circle_outline,
               loading: _loading,
               onTap: _changePassword,
-              colors: [AppColors.blue, AppColors.cyan],
+              colors: const [AppColors.blue, AppColors.cyan],
             ),
           ],
         ),
@@ -215,7 +215,7 @@ class _SuccessView extends StatelessWidget {
           label: 'Retour au profil',
           icon: Icons.person_outline,
           onTap: onBack,
-          colors: [AppColors.blue, AppColors.cyan],
+          colors: const [AppColors.blue, AppColors.cyan],
         ),
       ],
     );

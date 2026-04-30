@@ -412,6 +412,8 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
         'status':    'active',
         'entryTime': now.toIso8601String(),
         'agentId':   agent.uid,
+        'notified_15min': false,
+        'notified_5min': false,
       });
 
       // Générer QR de sortie
@@ -1182,7 +1184,7 @@ class AgentProfileScreen extends ConsumerWidget {
               label: 'Déconnexion',
               icon: Icons.logout,
               outlined: true,
-              colors: [AppColors.red],
+              colors: const [AppColors.red],
               onTap: () async {
                 await ref.read(authServiceProvider).logout();
                 if (context.mounted) context.go('/login');

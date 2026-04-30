@@ -72,6 +72,7 @@ class ParkingZone {
   final String openHours;
   final double? latitude;
   final double? longitude;
+  final String? agentId;
 
   const ParkingZone({
     required this.id,
@@ -80,6 +81,7 @@ class ParkingZone {
     required this.address,
     required this.totalSpots,
     required this.occupiedSpots,
+    this.agentId,
     required this.pricePerHour,
     this.isOpen = true,
     this.openHours = '24h/24',
@@ -102,11 +104,20 @@ class ParkingZone {
       occupiedSpots: d['occupiedSpots'] ?? 0,
       pricePerHour: (d['pricePerHour'] ?? d['tarif'] ?? 0).toDouble(),
       isOpen: d['isOpen'] ?? true,
+      agentId: d['agentId'] ?? '',
       openHours: d['openHours'] ?? '24h/24',
       latitude: d['latitude'] != null ? (d['latitude'] as num).toDouble() : null,
       longitude: d['longitude'] != null ? (d['longitude'] as num).toDouble() : null,
     );
   }
+  ParkingZone copyWith({int? occupiedSpots}) => ParkingZone(
+    id: id, name: name, type: type, address: address,
+    totalSpots: totalSpots,
+    occupiedSpots: occupiedSpots ?? this.occupiedSpots,
+    agentId: agentId, pricePerHour: pricePerHour,
+    isOpen: isOpen, openHours: openHours,
+    latitude: latitude, longitude: longitude,
+  );
 
   Map<String, dynamic> toMap() => {
         'name': name,

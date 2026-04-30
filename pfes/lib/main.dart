@@ -54,7 +54,7 @@ OneSignal.Notifications.addForegroundWillDisplayListener((event) {
   await initializeDateFormatting('fr_FR');
   timeago.setLocaleMessages('fr', timeago.FrMessages());
 
-  await Workmanager().initialize(callbackDispatcher, isInDebugMode: false);
+  
 
   runApp(const ProviderScope(child: ParkApp()));
 }

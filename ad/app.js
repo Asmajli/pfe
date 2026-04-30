@@ -11,7 +11,86 @@ function logout(){
   sessionStorage.clear();
   window.location.href='login.html';
 }
+// ── Edit zone ──
+window.editZone = async function(id) {
+  const z = zoneList.find(z => z.id === id);
+  if (!z) return;
+  document.getElementById('editZoneId').value = id;
+  document.getElementById('editZoneNom').value = z.name || z.nom || '';
 
+  // تحميل الـ agents في الـ select
+  const sel = document.getElementById('editZoneAgent');
+  sel.innerHTML = '<option value="">— Aucun agent —</option>';
+  agentList.forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a.id;
+    // إذا عنده parking آخر (مش هذا الـ parking) → mark
+    const hasOther = a.zone && a.zone !== id;
+    opt.textContent = (a.name || a.nom || '—') + (hasOther ? ' ⚠️ (autre parking)' : a.zone === id ? ' ✅ Actuel' : ' ✅ Disponible');
+    if (a.id === z.agentId) opt.selected = true;
+    sel.appendChild(opt);
+  });
+
+  openModal('mEditZone');
+};
+
+window.saveEditZone = async function() {
+  const id        = document.getElementById('editZoneId').value;
+  const nom       = document.getElementById('editZoneNom').value.trim();
+  const agentEl   = document.getElementById('editZoneAgent');
+  const newAgentId = agentEl.value;
+  const newAgentName = newAgentId
+    ? agentEl.options[agentEl.selectedIndex].text
+        .replace(' ⚠️ (autre parking)','')
+        .replace(' ✅ Actuel','')
+        .replace(' ✅ Disponible','').trim()
+    : '';
+
+  const oldZone = zoneList.find(z => z.id === id);
+  const oldAgentId = oldZone?.agentId;
+
+  try {
+    // 1. Si l'agent a changé → libérer l'ancien
+    if (oldAgentId && oldAgentId !== newAgentId) {
+      await updateDoc(doc(db, 'admins', oldAgentId), {
+        zone: null, zoneName: null
+      });
+    }
+
+    // 2. Si nouvel agent a un autre parking → le libérer
+    if (newAgentId) {
+      const newAgent = agentList.find(a => a.id === newAgentId);
+      if (newAgent?.zone && newAgent.zone !== id) {
+        await updateDoc(doc(db, 'zones', newAgent.zone), {
+          agentId: null, agentName: null, isOpen: false, status: 'inactive'
+        });
+      }
+    }
+
+    // 3. Mettre à jour la zone
+    await updateDoc(doc(db, 'zones', id), {
+      name: nom, nom,
+      agentId:   newAgentId   || null,
+      agentName: newAgentName || null,
+      isOpen:    newAgentId ? true : false,
+      status:    newAgentId ? 'active' : 'inactive',
+    });
+
+    // 4. Mettre à jour le nouvel agent
+    if (newAgentId) {
+      await updateDoc(doc(db, 'admins', newAgentId), {
+        zone: id, zoneName: nom
+      });
+    }
+
+    closeModal('mEditZone');
+    toast('✅ Parking modifié !', 'success');
+    loadZones();
+    loadAgents();
+  } catch(e) {
+    toast('Erreur: ' + e.message, 'danger');
+  }
+};
 // ══════════════════════════════════════════════════════
 //  LAYOUT BUILDER
 // ══════════════════════════════════════════════════════

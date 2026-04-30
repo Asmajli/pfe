@@ -45,8 +45,9 @@ class _State extends ConsumerState<LoginScreen> {
   }
 
   String _friendly(String e) {
-    if (e.contains('user-not-found') || e.contains('invalid-credential'))
+    if (e.contains('user-not-found') || e.contains('invalid-credential')) {
       return 'Email ou mot de passe incorrect';
+    }
     if (e.contains('wrong-password'))    return 'Mot de passe incorrect';
     if (e.contains('invalid-email'))     return 'Adresse email invalide';
     if (e.contains('too-many-requests')) return 'Trop de tentatives, réessayez plus tard';
@@ -105,7 +106,7 @@ class _State extends ConsumerState<LoginScreen> {
                     setState(() => _resetSuccess =
                         'Lien envoyé à ${ctrl.text.trim()} — Vérifiez votre boîte mail');
                   },
-                  colors: [AppColors.blue, AppColors.cyan],
+                  colors: const [AppColors.blue, AppColors.cyan],
                 ),
               ] else ...[
                 const Text('Mot de passe oublié ?',

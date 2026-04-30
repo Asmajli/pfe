@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../../models/models.dart';
 import '../../services/firebase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
@@ -42,17 +41,7 @@ class _State extends ConsumerState<RegisterScreen> {
       setState(() => _emailHint = null);
       return;
     }
-    setState(() { _checkingEmail = true; _emailHint = null; });
-    try {
-      final methods = await FirebaseAuth.instance.fetchSignInMethodsForEmail(email.trim());
-      if (!mounted) return;
-      setState(() {
-        _checkingEmail = false;
-        _emailHint = methods.isNotEmpty ? 'already_exists' : 'available';
-      });
-    } catch (_) {
-      if (mounted) setState(() { _checkingEmail = false; _emailHint = null; });
-    }
+    setState(() { _checkingEmail = false; _emailHint = 'available'; });
   }
 
   Future<void> _register() async {
@@ -132,8 +121,11 @@ class _State extends ConsumerState<RegisterScreen> {
                             ? const Icon(Icons.cancel, color: AppColors.red, size: 20)
                             : null,
                 onChanged: (v) {
-                  if (v.length > 5) _checkEmailExists(v);
-                  else setState(() => _emailHint = null);
+                  if (v.length > 5) {
+                    _checkEmailExists(v);
+                  } else {
+                    setState(() => _emailHint = null);
+                  }
                 },
                 validator: (v) {
                   if (v == null || v.isEmpty) return 'Email obligatoire';
@@ -238,7 +230,7 @@ class _State extends ConsumerState<RegisterScreen> {
               icon: Icons.person_add_outlined,
               loading: _loading,
               onTap: _emailHint == 'already_exists' ? null : _register,
-              colors: [AppColors.blue, AppColors.cyan],
+              colors: const [AppColors.blue, AppColors.cyan],
             ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2),
             const SizedBox(height: 16),
 
