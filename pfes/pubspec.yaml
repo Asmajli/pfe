@@ -60,3 +60,5 @@ flutter_native_splash:
     color: "#1a6bbf"
     image: assets/logo.png
     icon_background_color: "#1a6bbf"
+flutter:
+  uses-material-design: true
